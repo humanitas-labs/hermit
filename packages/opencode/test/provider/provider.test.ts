@@ -9,7 +9,6 @@ import { FSUtil } from "@opencode-ai/core/fs-util"
 import { CrossSpawnSpawner } from "@opencode-ai/core/cross-spawn-spawner"
 import { Global } from "@opencode-ai/core/global"
 import { disposeAllInstances, provideInstanceEffect, tmpdirScoped, TestInstance } from "../fixture/fixture"
-import { markPluginDependenciesReady } from "../fixture/plugin"
 import { Auth } from "@/auth"
 import { Config } from "@/config/config"
 import { Env } from "../../src/env"
@@ -1980,8 +1979,6 @@ it.effect("plugin config providers persist after instance dispose", () =>
     const configDir = path.join(dir, ".opencode")
     const root = path.join(configDir, "plugin")
     yield* Effect.promise(() => mkdir(root, { recursive: true }))
-    yield* Effect.promise(() => markPluginDependenciesReady(configDir))
-    yield* Effect.promise(() => markPluginDependenciesReady(Global.Path.config))
     yield* Effect.promise(() =>
       Bun.write(
         path.join(root, "demo-provider.ts"),
@@ -2037,7 +2034,6 @@ it.instance(
     const configDir = path.join(instance.directory, ".opencode")
     const root = path.join(configDir, "plugin")
     yield* Effect.promise(() => mkdir(root, { recursive: true }))
-    yield* Effect.promise(() => markPluginDependenciesReady(configDir))
     yield* Effect.promise(() =>
       Bun.write(
         path.join(root, "provider-filter.ts"),

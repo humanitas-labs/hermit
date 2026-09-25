@@ -43,7 +43,11 @@ const layer = Layer.effect(
         async function getCommand(item: Formatter.Info) {
           let cmd = commands[item.name]
           if (cmd === false || cmd === undefined) {
-            cmd = await item.enabled({ ...ctx, experimentalOxfmt: flags.experimentalOxfmt })
+            cmd = await item.enabled({
+              ...ctx,
+              experimentalOxfmt: flags.experimentalOxfmt,
+              disableLspDownload: flags.disableLspDownload,
+            })
             commands[item.name] = cmd
           }
           return cmd

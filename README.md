@@ -64,6 +64,8 @@ Hermit preserves the parts of OpenCode that provide the core coding-agent experi
 
 Features outside this core are evaluated against Hermit's privacy and simplicity goals.
 
+Hermit never runs an npm install on its own. Packages named under `plugin` in your config, non-bundled provider SDKs, and npm-backed formatters and language servers are installed on first use, and every install logs the package, the registry, and the reason before it runs. Local plugins and custom tools under `.opencode/plugin` and `.opencode/tool` that import runtime values from `@opencode-ai/plugin` (for example `tool()`) need that package resolvable from their directory: run `bun add @opencode-ai/plugin` or `npm install @opencode-ai/plugin` inside the `.opencode` directory or the global config directory. Files that only use `import type` need nothing.
+
 ## 4. Relationship with OpenCode
 
 Hermit is a fork of OpenCode and benefits from the substantial engineering work of the upstream project.

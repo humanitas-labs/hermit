@@ -1,6 +1,6 @@
 # 05 Plugins and npm
 
-**Status:** not started (revised for explicit egress)
+**Status:** done (branch `plugins-npm`; LSP `Npm.which` sites deferred to `07`, see Cross-region notes)
 
 ## 1. Goal
 
@@ -46,3 +46,30 @@ The binary never runs an npm install on its own. Installs happen only for entrie
 
 | Upstream file | Change | Reason |
 |---|---|---|
+| `packages/opencode/src/config/config.ts` | Deleted the per-config-directory bootstrap install of `@opencode-ai/plugin` and the `Npm` service dependency. `waitForDependencies` stays as the sequencing hook the plugin loader and tool registry call; `deps` is now always empty. | P1. The binary never runs an npm install on its own. |
+| `packages/opencode/src/config/tui.ts` | Deleted the same bootstrap install on the TUI config path; `TuiConfig.waitForDependencies` is a no-op. Dropped the `dirs` field `loadState` returned only for that install. | P1. Same bootstrap on the TUI side, not in the original line list because it postdates the audit anchor. |
+| `packages/core/src/npm.ts` | `add(pkg, reason)` and `which(pkg, bin?, reason?)`. `reify` logs one INFO line (`installing npm package`: packages, registry, reason, dir) before Arborist runs. Deleted `install(dir, ...)`, which reified a directory's `package.json` dependencies; the bootstrap was its only caller. | P2, P3. The registry is only known inside `reify`, so the log lives there and the reason is threaded in. Deleting `install` removes the only code path that downloaded a directory's declared dependencies. |
+| `packages/core/src/config/plugin/external.ts`, `packages/opencode/src/plugin/shared.ts` | `add(..., "config plugin")`. | P3. |
+| `packages/opencode/src/provider/provider.ts`, `packages/core/src/plugin/provider/dynamic.ts`, `packages/core/src/plugin/provider/sap-ai-core.ts` | `add(..., "provider <id>")` for non-bundled provider SDK packages. | P3. The two core files are the native-runtime equivalents of the `provider.ts` site and were not in the original line list. |
+| `packages/opencode/src/format/formatter.ts`, `packages/opencode/src/format/index.ts` | `Context.disableLspDownload` (from `RuntimeFlags`) gates the prettier, oxfmt, and biome `Npm.which` calls; each passes reason `"formatter"`. | P2. A project listing a formatter in `package.json` is not authorization to download it; the same flag that `07` B2 applies to LSP servers covers formatters. |
+| `packages/opencode/src/plugin/index.ts` | Deleted `experimentalWebSocketsEnabled` and the channel-based default; Codex WebSockets follow `OPENCODE_EXPERIMENTAL_WEBSOCKETS` only. | P4. |
+| `packages/opencode/src/cli/cmd/plug.ts` | Kept unchanged. It resolves the package through `resolvePluginTarget` and patches local config; no hosted service. | P5. |
+| `README.md` | Documented that Hermit never installs on its own and the manual `bun add @opencode-ai/plugin` for local plugins and tools with runtime imports. | P1 note. |
+| Tests | Deleted `test/plugin/openai-rollout.test.ts`, `test/fixture/plugin.ts` (and its uses in `provider.test.ts`, `httpapi-provider.test.ts`), the `installs dependencies in writable OPENCODE_CONFIG_DIR` case in `config.test.ts`, and the `Npm.install` case in `core/test/npm.test.ts`. Updated `Npm` mocks and `add` call expectations for the new signature. | Tests removed with the code they covered. |
+
+## 7. Cross-region notes
+
+- `07` (`packages/opencode/src/lsp/server.ts`): pass a reason at each of the ten `Npm.which` sites, e.g. `Npm.which("pyright", "pyright-langserver", "lsp python")`, so the install log names the trigger. Until then those sites log `reason="bin lookup"`. B2's `if (flags.disableLspDownload) return` guard should sit before each `Npm.which` call, matching the shape already used for `@vue/language-server` at line 152 and the one this branch used in `formatter.ts`.
+- `07` B3: formatter download logging is already covered by the `reify` log line with reason `"formatter"`; `07` only needs the LSP reasons above and the tree-sitter grammar line.
+- `packages/opencode/src/format/index.ts` line 46 is outside this plan's owned list; the one-line change passes `flags.disableLspDownload` into the formatter context.
+- `packages/core/src/plugin/provider/dynamic.ts` and `sap-ai-core.ts` are outside the owned list; only the `add` call gained a reason argument.
+- `11` S6: the fresh-start run below is the manual equivalent of S6 for the bootstrap install; the harness should assert no `installing npm package` log line and no `node_modules` under the config directory.
+- `10`: `packages/opencode/src/provider/provider.ts` was touched only at the `Npm.add` line; the boundary code is unchanged.
+
+## 8. Verification record
+
+- Fresh start, isolated `XDG_*` and `OPENCODE_TEST_HOME`, `OPENCODE_DISABLE_DEFAULT_PLUGINS` unset, `models --print-logs --log-level INFO`: zero `installing npm package` lines; the config directory contains only `.gitignore` and `opencode.jsonc`; no `node_modules`, `package.json`, or lockfile anywhere under the isolated root. No `Npm.install` code path remains in the tree.
+- Project `opencode.json` with `plugin: ["hermit-fixture@file:<dir>"]`, same isolation: one INFO line `installing npm package` with `packages`, `registry=https://registry.npmjs.org/`, `reason="config plugin"`, and the cache `dir`; `node_modules` appears under `<cache>/opencode/packages/<spec>/`, and the run completes with no plugin error.
+- Project-level `plugin` entries install without a prompt, the same as global entries; upstream's only gate is `--pure` / `OPENCODE_PURE`, which skips every external plugin. Recorded, not changed: a project config entry is an explicit user-written list, so it is class T, and the log line makes it visible.
+- `file://` and path plugins never reach `Npm.add` (`isPathPluginSpec` short-circuits in `resolvePluginTarget`); covered by `test/plugin/loader-shared.test.ts`.
+- Local TypeScript plugins from the compiled binary (M3): verified with a Bun-compiled test binary that bare specifiers in an externally imported `.ts` file resolve against the filesystem only, not the embedded bundle; `import type` is erased and works without `node_modules`. Hence the manual install documented in `README.md` is required only for runtime imports.

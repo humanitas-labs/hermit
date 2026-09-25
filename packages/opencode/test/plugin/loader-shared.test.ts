@@ -290,8 +290,8 @@ describe("plugin.loader.shared", () => {
           try {
             yield* load(tmp.path)
 
-            expect(add.mock.calls).toContainEqual(["acme-plugin@latest"])
-            expect(add.mock.calls).toContainEqual(["scope-plugin@2.3.4"])
+            expect(add.mock.calls).toContainEqual(["acme-plugin@latest", "config plugin"])
+            expect(add.mock.calls).toContainEqual(["scope-plugin@2.3.4", "config plugin"])
           } finally {
             add.mockRestore()
           }
@@ -654,7 +654,7 @@ describe("plugin.loader.shared", () => {
 
           try {
             yield* load(tmp.path)
-            expect(install).toHaveBeenCalledWith("broken-plugin@9.9.9")
+            expect(install).toHaveBeenCalledWith("broken-plugin@9.9.9", "config plugin")
             expect(yield* Effect.promise(() => Bun.file(tmp.extra.mark).text())).toBe("ok")
           } finally {
             install.mockRestore()
