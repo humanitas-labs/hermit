@@ -53,12 +53,10 @@ const TOP_LEVEL = [
   "upgrade",
   "uninstall",
   "serve",
-  "web",
   "models",
   "stats",
   "export",
   "import",
-  "github",
   "pr",
   "session",
   "plugin",
@@ -80,8 +78,6 @@ const SUBCOMMANDS = [
   ["agent", "list"],
   ["session", "list"],
   ["session", "delete"],
-  ["github", "install"],
-  ["github", "run"],
   ["db", "path"],
 ] as const
 
