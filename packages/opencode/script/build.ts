@@ -150,17 +150,13 @@ for (const item of targets) {
       autoloadPackageJson: true,
       target: name.replace(pkg.name, "bun") as any,
       outfile: `dist/${name}/bin/opencode`,
-      execArgv: [`--user-agent=opencode/${Script.version}`, "--use-system-ca", "--"],
+      execArgv: [`--user-agent=hermit/${Script.version}`, "--use-system-ca", "--"],
       windows: {},
     },
     files: {
       [treeSitterWorkerPath]: treeSitterWorker,
     },
-    entrypoints: [
-      "./src/index.ts",
-      workerPath,
-      treeSitterWorkerPath,
-    ],
+    entrypoints: ["./src/index.ts", workerPath, treeSitterWorkerPath],
     define: {
       FFF_LIBC: JSON.stringify(item.abi === "musl" ? "musl" : "gnu"),
       OPENCODE_VERSION: `'${Script.version}'`,

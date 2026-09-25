@@ -281,7 +281,6 @@ describe("Config", () => {
                 autoupdate: "notify",
                 share: "disabled",
                 enterprise: { url: "https://share.example.com" },
-                username: "test-user",
                 permissions: [
                   { action: "bash", resource: "*", effect: "ask" },
                   { action: "bash", resource: "git status", effect: "allow" },
@@ -367,7 +366,6 @@ describe("Config", () => {
             expect(documents[0]?.info.autoupdate).toBe("notify")
             expect(documents[0]?.info.share).toBe("disabled")
             expect(documents[0]?.info.enterprise).toEqual({ url: "https://share.example.com" })
-            expect(documents[0]?.info.username).toBe("test-user")
             expect(documents[0]?.info.permissions).toEqual([
               { action: "bash", resource: "*", effect: "ask" },
               { action: "bash", resource: "git status", effect: "allow" },

@@ -12,7 +12,7 @@ test body; the runners discover `*-input.*` files in sorted order.
 | `update-project/` | `<name>-input.json`, `<name>-patch.json`             | `<name>-output.json`, `<name>-normalized.json`             | Write an isolated project `config.json` and invoke the real `Config.update` service. |
 
 Read outputs capture the complete decoded document, including V1 schema defaults, but not environment-dependent runtime
-defaults such as the OS username. The read runner also checks that lowering did not mutate its input.
+defaults. The read runner also checks that lowering did not mutate its input.
 
 For updates, `<name>-output.*` is the exact text written by the service, including comments, formatting, and the presence or
 absence of a final newline. `<name>-normalized.json` records the V1 config returned by `updateGlobal`, or the decoded saved file

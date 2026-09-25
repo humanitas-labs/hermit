@@ -289,74 +289,6 @@ async function check(map: (dir: string) => string) {
   }
 }
 
-it.instance("loads config with defaults when no files exist", () =>
-  Effect.gen(function* () {
-    const config = yield* Config.use.get()
-    expect(config.username).toBeDefined()
-  }),
-)
-
-it.instance("falls back to generic username when system user info is unavailable", () =>
-  Effect.gen(function* () {
-    const userInfo = spyOn(os, "userInfo").mockImplementation(() => {
-      throw Object.assign(new Error("missing passwd entry"), { code: "ENOENT" })
-    })
-    try {
-      const config = yield* Config.use.get()
-      expect(config.username).toBe("user")
-    } finally {
-      userInfo.mockRestore()
-    }
-  }),
-)
-
-it.effect("creates global jsonc config with schema when no global configs exist", () =>
-  withGlobalConfig({}, ({ dir }) =>
-    Effect.gen(function* () {
-      yield* Config.use.get().pipe(provideInstanceEffect(dir))
-
-      const content = yield* FSUtil.use.readFileString(path.join(dir, "opencode.jsonc"))
-      expect(content).toContain('"$schema": "https://opencode.ai/config.json"')
-    }).pipe(Effect.provide(testInstanceStoreLayer), Effect.provide(LayerNode.compile(CrossSpawnSpawner.node))),
-  ),
-)
-
-it.effect("does not create global config when OPENCODE_CONFIG_DIR is set", () =>
-  Effect.gen(function* () {
-    const custom = yield* tmpdirScoped()
-    yield* withGlobalConfig({}, ({ dir }) =>
-      withProcessEnv(
-        "OPENCODE_CONFIG_DIR",
-        custom,
-        Effect.gen(function* () {
-          yield* Config.use.get().pipe(provideInstanceEffect(dir))
-
-          expect(yield* FSUtil.use.existsSafe(path.join(dir, "opencode.jsonc"))).toBe(false)
-        }).pipe(Effect.provide(testInstanceStoreLayer), Effect.provide(LayerNode.compile(CrossSpawnSpawner.node))),
-      ),
-    )
-  }),
-)
-
-it.instance(
-  "loads JSON config file",
-  Effect.gen(function* () {
-    const config = yield* Config.use.get()
-    expect(config.model).toBe("test/model")
-    expect(config.username).toBe("testuser")
-  }),
-  { config: { model: "test/model", username: "testuser" } },
-)
-
-it.instance(
-  "loads shell config field",
-  Effect.gen(function* () {
-    const config = yield* Config.use.get()
-    expect(config.shell).toBe("bash")
-  }),
-  { config: { shell: "bash" } },
-)
-
 it.instance("updates config and preserves empty shell sentinel", () =>
   Effect.gen(function* () {
     const test = yield* TestInstance
@@ -409,7 +341,7 @@ it.effect("logs global update diagnostics once without exposing values", () =>
     ({ dir }) =>
       Effect.gen(function* () {
         const messages: unknown[] = []
-        yield* Config.use.updateGlobal({ username: "updated" }).pipe(
+        yield* Config.use.updateGlobal({ shell: "updated" }).pipe(
           Effect.provide(
             Logger.layer([
               Logger.make<unknown, void>((options) => {
@@ -494,7 +426,7 @@ for (const name of ["opencode.json", "opencode.jsonc"]) {
           const fs = yield* FSUtil.Service
           const file = path.join(dir, name)
           const before = yield* fs.readFileString(file)
-          const exit = yield* Effect.exit(Config.use.updateGlobal({ username: "changed" }))
+          const exit = yield* Effect.exit(Config.use.updateGlobal({ shell: "changed" }))
           expect(Exit.isFailure(exit)).toBe(true)
           if (Exit.isFailure(exit)) {
             const error = Cause.squash(exit.cause)
@@ -514,7 +446,7 @@ it.instance("rejects a project update with native agent permissions without writ
     const file = path.join(instance.directory, "config.json")
     const before = JSON.stringify({ agents: { reviewer: { permissions: [] } } })
     yield* fs.writeFileString(file, before)
-    const exit = yield* Effect.exit(Config.use.update({ username: "changed" }))
+    const exit = yield* Effect.exit(Config.use.update({ shell: "changed" }))
     expect(Exit.isFailure(exit)).toBe(true)
     if (Exit.isFailure(exit))
       expect(Cause.squash(exit.cause)).toMatchObject({
@@ -645,12 +577,12 @@ it.instance("loads JSONC config file", () =>
         // This is a comment
         "$schema": "https://opencode.ai/config.json",
         "model": "test/model",
-        "username": "testuser"
+        "shell": "testuser"
       }`,
     )
     const config = yield* Config.use.get()
     expect(config.model).toBe("test/model")
-    expect(config.username).toBe("testuser")
+    expect(config.shell).toBe("testuser")
   }),
 )
 
@@ -662,7 +594,7 @@ it.instance("jsonc overrides json in the same directory", () =>
       {
         $schema: "https://opencode.ai/config.json",
         model: "base",
-        username: "base",
+        shell: "base",
       },
       "opencode.jsonc",
     )
@@ -672,7 +604,7 @@ it.instance("jsonc overrides json in the same directory", () =>
     })
     const config = yield* Config.use.get()
     expect(config.model).toBe("base")
-    expect(config.username).toBe("base")
+    expect(config.shell).toBe("base")
   }),
 )
 
@@ -684,10 +616,10 @@ it.instance("handles environment variable substitution", () =>
       const test = yield* TestInstance
       yield* writeConfigEffect(test.directory, {
         $schema: "https://opencode.ai/config.json",
-        username: "{env:TEST_VAR}",
+        shell: "{env:TEST_VAR}",
       })
       const config = yield* Config.use.get()
-      expect(config.username).toBe("test-user")
+      expect(config.shell).toBe("test-user")
     }),
   ),
 )
@@ -701,10 +633,10 @@ it.instance("preserves env variables when adding $schema to config", () =>
       // Config without $schema - should trigger auto-add
       yield* FSUtil.use.writeWithDirs(
         path.join(test.directory, "opencode.json"),
-        JSON.stringify({ username: "{env:PRESERVE_VAR}" }),
+        JSON.stringify({ shell: "{env:PRESERVE_VAR}" }),
       )
       const config = yield* Config.use.get()
-      expect(config.username).toBe("secret_value")
+      expect(config.shell).toBe("secret_value")
 
       // Read the file to verify the env variable was preserved
       const content = yield* FSUtil.use.readFileString(path.join(test.directory, "opencode.json"))
@@ -721,10 +653,10 @@ it.instance("handles file inclusion substitution", () =>
     yield* FSUtil.use.writeWithDirs(path.join(test.directory, "included.txt"), "test-user")
     yield* writeConfigEffect(test.directory, {
       $schema: "https://opencode.ai/config.json",
-      username: "{file:included.txt}",
+      shell: "{file:included.txt}",
     })
     const config = yield* Config.use.get()
-    expect(config.username).toBe("test-user")
+    expect(config.shell).toBe("test-user")
   }),
 )
 
@@ -734,10 +666,10 @@ it.instance("handles file inclusion with replacement tokens", () =>
     yield* FSUtil.use.writeWithDirs(path.join(test.directory, "included.md"), "const out = await Bun.$`echo hi`")
     yield* writeConfigEffect(test.directory, {
       $schema: "https://opencode.ai/config.json",
-      username: "{file:included.md}",
+      shell: "{file:included.md}",
     })
     const config = yield* Config.use.get()
-    expect(config.username).toBe("const out = await Bun.$`echo hi`")
+    expect(config.shell).toBe("const out = await Bun.$`echo hi`")
   }),
 )
 
@@ -1381,9 +1313,9 @@ it.instance(
     const config = yield* Config.use.get()
     expect(config.model).toBe("managed/model")
     expect(config.share).toBe("disabled")
-    expect(config.username).toBe("testuser")
+    expect(config.shell).toBe("testuser")
   }),
-  { config: { model: "user/model", share: "auto", username: "testuser" } },
+  { config: { model: "user/model", share: "auto", shell: "testuser" } },
 )
 
 it.instance(
@@ -1803,10 +1735,10 @@ envIsolationWellKnown.it.instance(
       process.env.TEST_TOKEN = "preexisting-token"
       const config = yield* Config.use.get()
       expect(envIsolationWellKnown.seen.authorization).toBe("Bearer test-token")
-      expect(config.username).toBe("test-token")
+      expect(config.shell).toBe("test-token")
       expect(process.env.TEST_TOKEN).toBe("preexisting-token")
     }),
-  { git: true, config: { username: "{env:TEST_TOKEN}" } },
+  { git: true, config: { shell: "{env:TEST_TOKEN}" } },
 )
 
 const nullConfigWellKnown = wellKnown({
@@ -2002,10 +1934,10 @@ describe("OPENCODE_DISABLE_PROJECT_CONFIG", () => {
         Effect.gen(function* () {
           const config = yield* Config.use.get()
           expect(config.model).not.toBe("project/model")
-          expect(config.username).not.toBe("project-user")
+          expect(config.shell).not.toBe("project-user")
         }),
       ),
-    { config: { model: "project/model", username: "project-user" } },
+    { config: { model: "project/model", shell: "project-user" } },
   )
 
   it.instance("skips project .opencode/ directories when flag is set", () =>
@@ -2031,7 +1963,6 @@ describe("OPENCODE_DISABLE_PROJECT_CONFIG", () => {
       Effect.gen(function* () {
         const config = yield* Config.use.get()
         expect(config).toBeDefined()
-        expect(config.username).toBeDefined()
       }),
     ),
   )
@@ -2095,11 +2026,11 @@ describe("OPENCODE_CONFIG_CONTENT token substitution", () => {
         "OPENCODE_CONFIG_CONTENT",
         JSON.stringify({
           $schema: "https://opencode.ai/config.json",
-          username: "{env:TEST_CONFIG_VAR}",
+          shell: "{env:TEST_CONFIG_VAR}",
         }),
         Effect.gen(function* () {
           const config = yield* Config.use.get()
-          expect(config.username).toBe("test_api_key_12345")
+          expect(config.shell).toBe("test_api_key_12345")
         }),
       ),
     ),
@@ -2113,11 +2044,11 @@ describe("OPENCODE_CONFIG_CONTENT token substitution", () => {
         "OPENCODE_CONFIG_CONTENT",
         JSON.stringify({
           $schema: "https://opencode.ai/config.json",
-          username: "{file:./api_key.txt}",
+          shell: "{file:./api_key.txt}",
         }),
         Effect.gen(function* () {
           const config = yield* Config.use.get()
-          expect(config.username).toBe("secret_key_from_file")
+          expect(config.shell).toBe("secret_key_from_file")
         }),
       )
     }),

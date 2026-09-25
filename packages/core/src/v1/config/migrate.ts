@@ -41,7 +41,6 @@ export function migrate(info: typeof ConfigV1.Info.Type) {
     autoupdate: info.autoupdate,
     share: info.share ?? (info.autoshare ? "auto" : undefined),
     enterprise: info.enterprise,
-    username: info.username,
     permissions: permissions(info.permission, info.tools),
     agents: agents(info),
     snapshots: info.snapshot,

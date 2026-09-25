@@ -1,6 +1,6 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "username": "before",
+  "shell": "before",
   "mcp": {
     "servers": {
       "modern": {
