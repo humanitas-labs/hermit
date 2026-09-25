@@ -1728,7 +1728,8 @@ const layer = Layer.effect(
         const policy = HermitPolicy.fromConfig(cfg)
         for (const provider of Object.values(providers)) {
           for (const model of Object.values(provider.models)) {
-            const url = endpoint(model, { ...provider.options, ...model.options }, varsLoaders[provider.id], envs)
+            // Mirrors resolveSDK, which reads baseURL from provider options only; per-model baseURL is not applied upstream.
+            const url = endpoint(model, provider.options, varsLoaders[provider.id], envs)
             model.boundary = url && URL.canParse(url) ? HermitPolicy.classify(new URL(url), policy) : "third-party"
             model.permitted = HermitPolicy.permits(policy.preset, model.boundary)
           }
