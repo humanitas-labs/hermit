@@ -232,10 +232,8 @@ export function start(options: Options) {
         const stream = new ReadableStream({
           start(controller) {
             controller.enqueue(`data: ${JSON.stringify(chunk({ role: "assistant", content: reply.text ?? "partial" }))}\n\n`)
-            setTimeout(() => {
-              controller.error(new Error("scripted abort"))
-              server.stop(true)
-            }, 50)
+            // stop(true) force-closes the open connection, which is the abort.
+            setTimeout(() => server.stop(true), 50)
           },
         })
         return new Response(stream, { headers: { "content-type": "text/event-stream" } })
