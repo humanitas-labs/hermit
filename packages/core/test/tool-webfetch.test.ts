@@ -242,25 +242,18 @@ describe("WebFetchTool registration", () => {
     }),
   )
 
-  it.effect("retries Cloudflare challenges with an honest user agent", () =>
+  it.effect("identifies itself with an honest user agent", () =>
     Effect.gen(function* () {
       reset()
-      let count = 0
-      respond = () =>
-        Effect.succeed(
-          ++count === 1
-            ? new Response("challenge", { status: 403, headers: { "cf-mitigated": "challenge" } })
-            : new Response("ok", { headers: { "content-type": "text/plain" } }),
-        )
+      respond = () => Effect.succeed(new Response("ok", { headers: { "content-type": "text/plain" } }))
       const registry = yield* ToolRegistry.Service
 
       expect(yield* executeTool(registry, call({ url: "https://1.1.1.1", format: "text" }))).toEqual({
         type: "text",
         value: "ok",
       })
-      expect(requests).toHaveLength(2)
-      expect(requests[0]?.headers["user-agent"]).toContain("Mozilla/5.0")
-      expect(requests[1]?.headers["user-agent"]).toBe("opencode")
+      expect(requests).toHaveLength(1)
+      expect(requests[0]?.headers["user-agent"]).toMatch(/^hermit\//)
     }),
   )
 

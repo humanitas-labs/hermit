@@ -29,6 +29,13 @@ const LogLevelRef = Schema.Literals(["DEBUG", "INFO", "WARN", "ERROR"]).annotate
   description: "Log level",
 })
 
+export const WebSearch = Schema.Struct({
+  provider: Schema.Literals(["exa", "parallel"]).annotate({
+    description: "Web search backend the websearch tool sends queries to",
+  }),
+  apiKey: Schema.optional(Schema.String).annotate({ description: "API key for the configured web search backend" }),
+}).annotate({ identifier: "WebSearchConfig" })
+
 export const Info = Schema.Struct({
   $schema: Schema.optional(Schema.String).annotate({
     description: "JSON schema reference for configuration validation",
@@ -49,6 +56,10 @@ export const Info = Schema.Struct({
     description: "@deprecated Use 'references' field instead. Named git or local directory references",
   }),
   watcher: Schema.optional(Schema.Struct({ ignore: Schema.optional(Schema.mutable(Schema.Array(Schema.String))) })),
+  websearch: Schema.optional(WebSearch).annotate({
+    description:
+      "Enable the websearch tool against an explicitly configured backend. When absent the tool is not registered.",
+  }),
   snapshot: Schema.optional(Schema.Boolean).annotate({
     description:
       "Enable or disable snapshot tracking. When false, filesystem snapshots are not recorded and undoing or reverting will not undo/redo file changes. Defaults to true.",

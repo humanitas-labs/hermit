@@ -1,18 +1,17 @@
 export * as WebSearchTool from "./websearch"
 
 import { ToolFailure } from "@opencode-ai/llm"
-import { Context, Duration, Effect, Layer, Schema } from "effect"
+import { Duration, Effect, Layer, Schema } from "effect"
 import { HttpClient, HttpClientRequest } from "effect/unstable/http"
 import { makeLocationNode } from "../effect/app-node"
 import { LayerNodePlatform } from "../effect/app-node-platform"
-import { truthy } from "../flag/flag"
+import { Config } from "../config"
 import { InstallationVersion } from "../installation/version"
 import { PositiveInt } from "../schema"
 import { PermissionV2 } from "../permission"
 import { Tool } from "./tool"
 import { Tools } from "./tools"
 import { collectBoundedResponseBody } from "./http-body"
-import { checksum } from "../util/encode"
 import { ToolRegistry } from "./registry"
 
 export const name = "websearch"
@@ -25,11 +24,12 @@ export const MAX_RESPONSE_BYTES = 256 * 1024
 
 /**
  * Provider-independent local web search retained in V2 core for launch parity.
- * This invokes the legacy Exa/Parallel product backends itself. It is distinct
- * from provider-hosted web search tools, which remain route-owned and execute
- * at the model provider. Ownership of this compromise can be revisited later.
+ * This invokes the Exa or Parallel backend named in the `websearch` config key.
+ * It is distinct from provider-hosted web search tools, which remain route-owned
+ * and execute at the model provider. The tool is only registered when the
+ * `websearch` config key is present.
  */
-export const description = `Search the web using the session's local web search provider. Use this for current information beyond knowledge cutoff.
+export const description = `Search the web using the configured web search provider. Use this for current information beyond knowledge cutoff.
 
 This is a provider-independent local tool backed by Exa or Parallel. Provider-hosted web search tools are separate and execute at the model provider.
 
@@ -58,43 +58,6 @@ export const Input = Schema.Struct({
 
 export const Provider = Schema.Literals(["exa", "parallel"])
 export type Provider = typeof Provider.Type
-
-export interface Config {
-  readonly provider?: Provider
-  readonly enableExa: boolean
-  readonly enableParallel: boolean
-  readonly exaApiKey?: string
-  readonly parallelApiKey?: string
-}
-
-export class ConfigService extends Context.Service<ConfigService, Config>()("@opencode/v2/WebSearchConfig") {}
-
-/** Isolates the retained product environment contract from the generic tool implementation. */
-export const defaultConfigLayer = Layer.sync(ConfigService, () =>
-  ConfigService.of({
-    provider:
-      process.env.OPENCODE_WEBSEARCH_PROVIDER === "exa" || process.env.OPENCODE_WEBSEARCH_PROVIDER === "parallel"
-        ? process.env.OPENCODE_WEBSEARCH_PROVIDER
-        : undefined,
-    enableExa: truthy("OPENCODE_EXPERIMENTAL") || truthy("OPENCODE_ENABLE_EXA") || truthy("OPENCODE_EXPERIMENTAL_EXA"),
-    enableParallel: truthy("OPENCODE_ENABLE_PARALLEL") || truthy("OPENCODE_EXPERIMENTAL_PARALLEL"),
-    exaApiKey: process.env.EXA_API_KEY,
-    parallelApiKey: process.env.PARALLEL_API_KEY,
-  }),
-)
-
-export const configNode = makeLocationNode({ service: ConfigService, layer: defaultConfigLayer, deps: [] })
-
-export function selectProvider(
-  sessionID: string,
-  flags: Pick<Config, "enableExa" | "enableParallel"> = { enableExa: false, enableParallel: false },
-  override?: Provider,
-): Provider {
-  if (override) return override
-  if (flags.enableParallel) return "parallel"
-  if (flags.enableExa) return "exa"
-  return Number.parseInt(checksum(sessionID) ?? "0", 36) % 2 === 0 ? "exa" : "parallel"
-}
 
 const McpResult = Schema.Struct({
   result: Schema.Struct({
@@ -132,7 +95,6 @@ const ExaArgs = Schema.Struct({
 const ParallelArgs = Schema.Struct({
   objective: Schema.String,
   search_queries: Schema.Array(Schema.String),
-  session_id: Schema.String,
 })
 const McpRequest = <F extends Schema.Struct.Fields>(args: Schema.Struct<F>) =>
   Schema.Struct({
@@ -193,8 +155,11 @@ const layer = Layer.effectDiscard(
   Effect.gen(function* () {
     const tools = yield* Tools.Service
     const http = yield* HttpClient.HttpClient
-    const config = yield* ConfigService
+    const config = yield* Config.Service
     const permission = yield* PermissionV2.Service
+
+    const websearch = Config.latest(yield* config.entries(), "websearch")
+    if (!websearch) return
 
     yield* tools
       .register({
@@ -204,7 +169,7 @@ const layer = Layer.effectDiscard(
           output: Output,
           toModelOutput: ({ output }) => [{ type: "text", text: output.text }],
           execute: (input, context) => {
-            const provider = selectProvider(context.sessionID, config, config.provider)
+            const provider = websearch.provider
             return Effect.gen(function* () {
               yield* permission.assert({
                 action: name,
@@ -218,7 +183,7 @@ const layer = Layer.effectDiscard(
 
               const text =
                 provider === "exa"
-                  ? yield* callMcp(http, exaUrl(config.exaApiKey), "web_search_exa", ExaArgs, {
+                  ? yield* callMcp(http, exaUrl(websearch.apiKey), "web_search_exa", ExaArgs, {
                       query: input.query,
                       type: input.type || "auto",
                       numResults: input.numResults || 8,
@@ -233,12 +198,10 @@ const layer = Layer.effectDiscard(
                       {
                         objective: input.query,
                         search_queries: [input.query],
-                        session_id: context.sessionID,
-                        // V2 invocation context does not safely expose the model yet.
                       },
                       {
                         "User-Agent": `opencode/${InstallationVersion}`,
-                        ...(config.parallelApiKey ? { Authorization: `Bearer ${config.parallelApiKey}` } : {}),
+                        ...(websearch.apiKey ? { Authorization: `Bearer ${websearch.apiKey}` } : {}),
                       },
                     )
               return {
@@ -256,5 +219,5 @@ const layer = Layer.effectDiscard(
 export const node = makeLocationNode({
   name: "tool/websearch",
   layer,
-  deps: [ToolRegistry.node, PermissionV2.node, LayerNodePlatform.httpClient, configNode],
+  deps: [ToolRegistry.node, PermissionV2.node, LayerNodePlatform.httpClient, Config.node],
 })

@@ -1654,6 +1654,14 @@ export type ServerConfig = {
   cors?: Array<string>
 }
 
+export type WebSearchConfig = {
+  /**
+   * Web search backend the websearch tool sends queries to
+   */
+  provider: "exa" | "parallel"
+  apiKey?: string
+}
+
 export type PermissionActionConfig = "ask" | "allow" | "deny"
 
 export type PermissionObjectConfig = {
@@ -1914,6 +1922,7 @@ export type Config = {
   watcher?: {
     ignore?: Array<string>
   }
+  websearch?: WebSearchConfig
   snapshot?: boolean
   plugin?: Array<
     | string

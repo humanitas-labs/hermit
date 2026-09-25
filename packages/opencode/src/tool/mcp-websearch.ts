@@ -1,10 +1,15 @@
 import { Duration, Effect, Schema } from "effect"
 import { HttpClient, HttpClientRequest } from "effect/unstable/http"
 
-export const EXA_URL = process.env.EXA_API_KEY
-  ? `https://mcp.exa.ai/mcp?exaApiKey=${encodeURIComponent(process.env.EXA_API_KEY)}`
-  : "https://mcp.exa.ai/mcp"
+export const EXA_URL = "https://mcp.exa.ai/mcp"
 export const PARALLEL_URL = "https://search.parallel.ai/mcp"
+
+export function exaURL(apiKey: string | undefined) {
+  if (!apiKey) return EXA_URL
+  const url = new URL(EXA_URL)
+  url.searchParams.set("exaApiKey", apiKey)
+  return url.toString()
+}
 
 const McpResult = Schema.Struct({
   result: Schema.Struct({
@@ -51,8 +56,6 @@ export const SearchArgs = Schema.Struct({
 export const ParallelSearchArgs = Schema.Struct({
   objective: Schema.String,
   search_queries: Schema.Array(Schema.String),
-  session_id: Schema.optional(Schema.String),
-  model_name: Schema.optional(Schema.String),
 })
 
 const McpRequest = <F extends Schema.Struct.Fields>(args: Schema.Struct<F>) =>

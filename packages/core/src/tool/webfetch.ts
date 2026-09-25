@@ -7,6 +7,7 @@ import { Parser } from "htmlparser2"
 import TurndownService from "turndown"
 import { makeLocationNode } from "../effect/app-node"
 import { LayerNodePlatform } from "../effect/app-node-platform"
+import { InstallationVersion } from "../installation/version"
 import { PermissionV2 } from "../permission"
 import { collectBoundedResponseBody } from "./http-body"
 import { ToolRegistry } from "./registry"
@@ -55,39 +56,21 @@ const acceptHeader = (format: Format) => {
   return "*/*"
 }
 
-const headers = (format: Format, userAgent: string) => ({
-  "User-Agent": userAgent,
+const headers = (format: Format) => ({
+  "User-Agent": `hermit/${InstallationVersion}`,
   Accept: acceptHeader(format),
   "Accept-Language": "en-US,en;q=0.9",
 })
 
-const browserUserAgent =
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36"
-
-const isCloudflareChallenge = (error: unknown) => {
-  if (!error || typeof error !== "object" || !("reason" in error)) return false
-  const reason = error.reason
-  if (
-    !reason ||
-    typeof reason !== "object" ||
-    !("_tag" in reason) ||
-    reason._tag !== "StatusCodeError" ||
-    !("response" in reason)
-  )
-    return false
-  const response = reason.response as HttpClientResponse.HttpClientResponse
-  return response.status === 403 && response.headers["cf-mitigated"] === "challenge"
-}
-
-const request = (url: string, format: Format, userAgent = browserUserAgent) =>
-  HttpClientRequest.get(url).pipe(HttpClientRequest.setHeaders(headers(format, userAgent)))
+const request = (url: string, format: Format) =>
+  HttpClientRequest.get(url).pipe(HttpClientRequest.setHeaders(headers(format)))
 
 const assertHttpUrl = (url: URL) => {
   if (url.protocol !== "http:" && url.protocol !== "https:") throw new Error("URL must use http:// or https://")
 }
 
-const execute = (http: HttpClient.HttpClient, url: string, format: Format, userAgent = browserUserAgent) =>
-  http.execute(request(url, format, userAgent)).pipe(Effect.flatMap(HttpClientResponse.filterStatusOk))
+const execute = (http: HttpClient.HttpClient, url: string, format: Format) =>
+  http.execute(request(url, format)).pipe(Effect.flatMap(HttpClientResponse.filterStatusOk))
 
 const collectBody = (response: HttpClientResponse.HttpClientResponse) =>
   collectBoundedResponseBody(
@@ -146,9 +129,7 @@ const layer = Layer.effectDiscard(
               })
 
               const { body, contentType } = yield* Effect.gen(function* () {
-                const response = yield* execute(http, input.url, input.format).pipe(
-                  Effect.catchIf(isCloudflareChallenge, () => execute(http, input.url, input.format, "opencode")),
-                )
+                const response = yield* execute(http, input.url, input.format)
                 const contentType = response.headers["content-type"] || ""
                 const mime = mimeFrom(contentType)
                 if (isImageAttachment(mime))

@@ -69,6 +69,9 @@ export class Info extends Schema.Class<Info>("Config.Info")({
   watcher: ConfigWatcher.Info.pipe(Schema.optional).annotate({
     description: "Filesystem watcher configuration",
   }),
+  websearch: ConfigV1.WebSearch.pipe(Schema.optional).annotate({
+    description: "Enable the websearch tool against an explicitly configured backend",
+  }),
   formatter: ConfigFormatter.Info.pipe(Schema.optional).annotate({
     description: "Enable built-in formatters or configure formatter overrides",
   }),

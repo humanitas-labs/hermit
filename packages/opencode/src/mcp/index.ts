@@ -246,6 +246,7 @@ const layer = Layer.effect(
           status: { status: "failed" as const, error: `Invalid MCP URL for "${key}"` },
         }
       }
+      yield* Effect.logInfo("connecting to remote MCP server", { name: key, url: url.toString() })
       let authProvider: McpOAuthProvider | undefined
 
       if (!oauthDisabled) {
