@@ -1,16 +1,205 @@
+# Agent Instructions
+
+These instructions apply to coding agents working in the Hermit repository.
+
+## 1. Project context
+
+Hermit is a privacy-focused fork of OpenCode.
+
+Before making architectural changes or significant modifications to inherited OpenCode code, read:
+
+- `README.md`
+- `docs/fork.md`
+- `docs/privacy-model.md`
+- `docs/upstream.md`
+
+These documents define project-level architectural constraints.
+
+## 2. Core principles
+
+When modifying Hermit:
+
+1. Preserve privacy and auditability.
+2. Preserve reliable model and tool execution.
+3. Keep local inference genuinely local.
+4. Make data-egress boundaries explicit.
+5. Never introduce implicit remote inference.
+6. Never introduce hidden transmission of user context.
+7. Preserve useful web and network capabilities.
+8. Prefer simple implementations.
+9. Avoid unnecessary divergence from useful upstream code.
+10. Do not pursue OpenCode feature parity as a goal.
+
+## 3. Privacy and network behavior
+
+### 3.1 — Local inference is not offline
+
+Do not treat internet access itself as prohibited.
+
+Hermit may use network-capable tools for:
+
+- web search
+- documentation
+- Git repositories
+- package registries
+- APIs
+- remote development resources
+- other user-requested operations
+
+The privacy boundary concerns where private user data and model context are transmitted.
+
+### 3.2 — Local inference
+
+When local inference is selected:
+
+- model context must remain local
+- inference should use the explicitly configured local endpoint
+- no remote model should receive the context
+- no remote inference fallback is permitted
+- no hidden secondary inference is permitted
+- no remote embeddings or summarization should occur implicitly
+
+Failure of the local model must result in failure or an explicit user decision, not automatic remote fallback.
+
+### 3.3 — Remote inference
+
+Remote inference must be explicitly configured.
+
+When remote inference is used, requests should go directly to the configured provider or user-controlled endpoint unless another architecture has been explicitly approved.
+
+Do not introduce hidden routing through Hermit, OpenCode, or another intermediary.
+
+### 3.4 — Application egress
+
+Do not introduce mechanisms that implicitly transmit private information through:
+
+- telemetry
+- analytics
+- crash reporting
+- hosted session storage
+- cloud synchronization
+- account synchronization
+- remote logging
+- remote debugging
+- automatic workspace upload
+- cloud embeddings
+- hosted routing services
+
+If a feature introduces a new data-egress path, identify and document that trust boundary before implementation.
+
+## 4. Tool egress
+
+Network-capable tools are intentionally allowed.
+
+An agent may use commands such as web requests, Git operations, package managers, and APIs when required for its task.
+
+Do not weaken those capabilities merely to make local inference "offline."
+
+However, recognize that tools can themselves transmit local data.
+
+Do not add hidden tool behavior that uploads local files or context without being represented through the normal tool execution and permission mechanisms.
+
+Future egress-aware tool controls should be treated as a separate security feature.
+
+## 5. Modifying inherited code
+
+Before substantially changing inherited OpenCode code:
+
+1. Determine whether the change is necessary.
+2. Determine whether existing behavior can be preserved.
+3. Prefer the smallest change that achieves the objective.
+4. Avoid stylistic refactors unrelated to the task.
+5. Consider whether the modification will make valuable upstream fixes harder to port.
+
+Do not rewrite working core systems without a concrete reason.
+
+## 6. Upstream work
+
+### 6.1 — Using upstream implementations
+
+When implementing or fixing functionality inherited from OpenCode, check whether upstream has already addressed the issue when appropriate.
+
+If an upstream implementation is suitable, prefer selectively adopting it over independently maintaining duplicate logic.
+
+### 6.2 — Recording upstream ports
+
+When intentionally adopting meaningful upstream work:
+
+1. record the upstream commit or PR
+2. preserve required attribution
+3. document meaningful deviations
+4. update `docs/upstream.md`
+
+Do not broadly merge upstream solely to obtain one useful fix.
+
+## 7. Architectural changes
+
+Before introducing a new abstraction, subsystem, dependency, or persistent service, ask whether Hermit actually needs to own it.
+
+In particular, avoid introducing:
+
+- accounts
+- hosted state
+- unnecessary databases
+- telemetry
+- analytics
+- implicit cloud dependencies
+- provider-routing infrastructure that obscures the inference destination
+
+Reuse reliable existing OpenCode infrastructure when doing so does not conflict with Hermit's goals.
+
+## 8. Verification
+
+Changes affecting inference, networking, telemetry, tools, or privacy should be tested against the relevant guarantees.
+
+### 8.1 — Inference verification
+
+Verify that:
+
+- local inference reaches only the configured local inference endpoint
+- remote inference reaches the explicitly configured provider
+- provider fallback cannot happen silently
+- secondary model calls do not bypass the configured inference boundary
+
+### 8.2 — Egress verification
+
+Where practical, inspect actual network behavior rather than relying solely on source-level assumptions.
+
+Tests should eventually detect unexpected application-level network destinations and unexpected transmission of agent context.
+
+### 8.3 — Tool verification
+
+Do not classify expected user-visible tool networking as a privacy failure merely because it accesses the internet.
+
+Distinguish tool activity from hidden application or inference egress.
+
+## 9. Decision rule
+
+When evaluating a feature or architectural change, ask:
+
+> Does this create a new way for private user data or agent context to leave the user's chosen trust boundary?
+
+If yes, that boundary must be explicit, understandable, and justified.
+
+When uncertain between adding complexity and keeping Hermit smaller, prefer the smaller system unless the additional complexity materially improves the core agent experience, privacy, security, or reliability.
+
+## 10. Inherited engineering conventions
+
+The conventions below are inherited from upstream OpenCode and remain in force. Following them keeps Hermit's diff against upstream small and makes porting upstream fixes easier.
+
 - To regenerate the legacy JavaScript SDK, run `./packages/sdk/js/script/build.ts`.
 - After changing the public Protocol or Server `HttpApi`, run `bun run generate` from `packages/client`. Do not edit `src/generated` or `src/generated-effect` directly.
 - Keep runtime dependencies directed from Schema to Core and Protocol, then from Core and Protocol to Server. Client runtime code may depend on Schema and Protocol but never Core or Server; `sdk-next` composes Client, Core, and Server.
-- The default branch in this repo is `dev`.
-- Local `main` ref may not exist; use `dev` or `origin/dev` for diffs.
+- The default branch in this repo is `master`. The upstream OpenCode remote is named `upstream`; its default branch is `dev`.
+- Use `master` or `origin/master` for diffs. Use `upstream/dev` only when comparing against OpenCode.
 
-## Branch Names
+### Branch Names
 
 Use a short branch name of at most three words, separated by hyphens. Do not use slashes or type prefixes such as `feat/` or `fix/`.
 
 Examples: `session-recovery`, `fix-scroll-state`, `regenerate-sdk`.
 
-## Commits and PR Titles
+### Commits and PR Titles
 
 Use conventional commit-style messages and PR titles: `type(scope): summary`.
 
@@ -18,9 +207,9 @@ Valid types are `feat`, `fix`, `docs`, `chore`, `refactor`, and `test`. Scopes a
 
 Examples: `fix(tui): simplify thinking toggle styling`, `docs: update contributing guide`, `chore(sdk): regenerate types`.
 
-## Style Guide
+### Style Guide
 
-### General Principles
+#### General Principles
 
 - Keep things in one function unless composable or reusable
 - Do not extract single-use helpers preemptively. Inline the logic at the call site unless the helper is reused, hides a genuinely complex boundary, or has a clear independent name that improves the caller.
@@ -43,7 +232,7 @@ const journalPath = path.join(dir, "journal.json")
 const journal = await Bun.file(journalPath).json()
 ```
 
-### Destructuring
+#### Destructuring
 
 Avoid unnecessary destructuring. Use dot notation to preserve context.
 
@@ -56,14 +245,14 @@ obj.b
 const { a, b } = obj
 ```
 
-### Imports
+#### Imports
 
 - Never alias imports. Do not use `import { foo as bar } from "..."` or renamed imports like `resolve as pathResolve`.
 - Never use star imports. Do not use `import * as Foo from "..."` or `import type * as Foo from "..."`.
 - If a namespace-style value is needed, import the module's own exported namespace by name, for example `import { Project } from "@opencode-ai/core/project"`, then reference `Project.ID`.
 - Prefer dynamic imports for heavy modules that are only needed in selected code paths, especially in startup-sensitive entrypoints. Destructure dynamic import bindings near the top of the narrowest scope that needs them so they read like normal imports. Avoid inline chains such as `await import("./module").then((mod) => mod.value())` or `(await import("./module")).value()`. Keep branch-specific imports inside the branch that needs them to preserve lazy loading.
 
-### Variables
+#### Variables
 
 Prefer `const` over `let`. Use ternaries or early returns instead of reassignment.
 
@@ -77,7 +266,7 @@ if (condition) foo = 1
 else foo = 2
 ```
 
-### Control Flow
+#### Control Flow
 
 Avoid `else` statements. Prefer early returns.
 
@@ -95,7 +284,7 @@ function foo() {
 }
 ```
 
-### Complex Logic
+#### Complex Logic
 
 When a function has several validation branches or supporting details, make the main function read as the happy path and move supporting details into small helpers below it.
 
@@ -118,7 +307,7 @@ function requireConfig(input: unknown) {
 - Prefer Effect schema helpers such as `Schema.UnknownFromJsonString` and `Schema.decodeUnknownOption` over manual `JSON.parse` wrapped in `Effect.try` when parsing untrusted JSON strings.
 - Add comments for non-obvious constraints and surprising behavior, not for obvious assignments or control flow.
 
-### Schema Definitions (Drizzle)
+#### Schema Definitions (Drizzle)
 
 Use snake_case for field names so column names don't need to be redefined as strings.
 
@@ -138,17 +327,17 @@ const table = sqliteTable("session", {
 })
 ```
 
-## Testing
+### Testing
 
 - Avoid mocks as much as possible, you shouldn't be using globalThis.\* at all unless it's the only option.
 - Test actual implementation, do not duplicate logic into tests
 - Tests cannot run from repo root (guard: `do-not-run-tests-from-root`); run from package dirs like `packages/opencode`.
 
-## Type Checking
+### Type Checking
 
 - Always run `bun typecheck` from package directories (e.g., `packages/opencode`), never `tsc` directly.
 
-## V2 Session Core
+### V2 Session Core
 
 - Keep durable prompt admission separate from model execution. `SessionV2.prompt(...)` admits one durable `session_input` row before scheduling advisory `SessionExecution.wake(sessionID)` unless `resume: false` requests admit-only behavior. The serialized runner promotes admitted inputs into visible user messages at safe boundaries.
 - Reusing a Session ID adopts the existing Session. Reusing a prompt message ID reconciles an exact retry only when Session, prompt, and delivery mode match; conflicting reuse fails. Historical projected prompts lazily synthesize promoted inbox records during exact retry.

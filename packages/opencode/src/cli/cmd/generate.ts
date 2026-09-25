@@ -32,7 +32,7 @@ export const GenerateCommand = {
     const raw = JSON.stringify(specs, null, 2)
 
     // Format through prettier so output is byte-identical to committed file
-    // regardless of whether ./script/format.ts runs afterward.
+    // regardless of whether `bun run format` runs afterward.
     const prettier = await import("prettier")
     const babel = await import("prettier/plugins/babel")
     const estree = await import("prettier/plugins/estree")
