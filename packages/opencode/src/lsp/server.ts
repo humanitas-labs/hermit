@@ -13,6 +13,9 @@ import { Module } from "@opencode-ai/core/util/module"
 import { spawn } from "./launch"
 import { Npm } from "@opencode-ai/core/npm"
 import type { RuntimeFlags } from "@/effect/runtime-flags"
+import { Effect, ManagedRuntime } from "effect"
+import { Observability } from "@opencode-ai/core/observability"
+import { memoMap } from "@opencode-ai/core/effect/memo-map"
 
 const pathExists = async (p: string) =>
   fs
@@ -85,6 +88,13 @@ export interface Info {
   spawn(root: string, ctx: InstanceContext, flags: RuntimeFlags.Info): Promise<Handle | undefined>
 }
 
+// Spawn functions are plain async code; sharing the app memo map routes these notices to the app loggers.
+const logRuntime = ManagedRuntime.make(Observability.layer, { memoMap })
+const logDownload = (server: Pick<Info, "id" | "extensions">, url: string) =>
+  logRuntime.runPromise(
+    Effect.logInfo("downloading language server", { server: server.id, url, extensions: server.extensions }),
+  )
+
 export const Deno: Info = {
   id: "deno",
   root: async (file, ctx) => {
@@ -119,9 +129,10 @@ export const Typescript: Info = {
     ["deno.json", "deno.jsonc"],
   ),
   extensions: [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".mts", ".cts"],
-  async spawn(root, ctx) {
+  async spawn(root, ctx, flags) {
     const tsserver = Module.resolve("typescript/lib/tsserver.js", ctx.directory)
     if (!tsserver) return
+    if (flags.disableLspDownload) return
     const bin = await Npm.which("typescript-language-server")
     if (!bin) return
     const proc = spawn(bin, ["--stdio"], {
@@ -180,6 +191,7 @@ export const ESLint: Info = {
     const serverPath = path.join(Global.Path.bin, "vscode-eslint", "server", "out", "eslintServer.js")
     if (!(await Filesystem.exists(serverPath))) {
       if (flags.disableLspDownload) return
+      await logDownload(ESLint, "https://github.com/microsoft/vscode-eslint/archive/refs/heads/main.zip")
       const response = await fetch("https://github.com/microsoft/vscode-eslint/archive/refs/heads/main.zip")
       if (!response.ok) return
 
@@ -323,7 +335,7 @@ export const Biome: Info = {
     ".gql",
     ".html",
   ],
-  async spawn(root) {
+  async spawn(root, _ctx, flags) {
     const localBin = path.join(root, "node_modules", ".bin", "biome")
     let bin: string | undefined
     if (await Filesystem.exists(localBin)) bin = localBin
@@ -337,6 +349,7 @@ export const Biome: Info = {
     if (!bin) {
       const resolved = Module.resolve("biome", root)
       if (!resolved) return
+      if (flags.disableLspDownload) return
       bin = await Npm.which("biome")
       if (!bin) return
       args = ["lsp-proxy", "--stdio"]
@@ -549,6 +562,7 @@ export const ElixirLS: Info = {
 
         if (flags.disableLspDownload) return
 
+        await logDownload(ElixirLS, "https://github.com/elixir-lsp/elixir-ls/archive/refs/heads/master.zip")
         const response = await fetch("https://github.com/elixir-lsp/elixir-ls/archive/refs/heads/master.zip")
         if (!response.ok) return
         const zipPath = path.join(Global.Path.bin, "elixir-ls.zip")
@@ -597,6 +611,7 @@ export const Zls: Info = {
 
       if (flags.disableLspDownload) return
 
+      await logDownload(Zls, "https://api.github.com/repos/zigtools/zls/releases/latest")
       const releaseResponse = await fetch("https://api.github.com/repos/zigtools/zls/releases/latest")
       if (!releaseResponse.ok) {
         return
@@ -753,6 +768,10 @@ async function installRoslynLanguageServer(disableLspDownload: boolean) {
   }
 
   if (disableLspDownload) return
+  await logDownload(
+    { id: "roslyn", extensions: [".cs"] },
+    "https://api.nuget.org (dotnet tool install roslyn-language-server)",
+  )
   const proc = Process.spawn(["dotnet", "tool", "install", "--global", "roslyn-language-server", "--prerelease"], {
     stdout: "pipe",
     stderr: "pipe",
@@ -973,6 +992,7 @@ export const Clangd: Info = {
 
     if (flags.disableLspDownload) return
 
+    await logDownload(Clangd, "https://api.github.com/repos/clangd/clangd/releases/latest")
     const releaseResponse = await fetch("https://api.github.com/repos/clangd/clangd/releases/latest")
     if (!releaseResponse.ok) {
       return
@@ -1207,6 +1227,7 @@ export const JDTLS: Info = {
         "https://www.eclipse.org/downloads/download.php?file=/jdtls/snapshots/jdt-language-server-latest.tar.gz"
       const archiveName = "release.tar.gz"
 
+      await logDownload(JDTLS, releaseURL)
       const download = await fetch(releaseURL)
       if (!download.ok || !download.body) {
         return
@@ -1294,6 +1315,7 @@ export const KotlinLS: Info = {
     if (!installed) {
       if (flags.disableLspDownload) return
 
+      await logDownload(KotlinLS, "https://api.github.com/repos/Kotlin/kotlin-lsp/releases/latest")
       const releaseResponse = await fetch("https://api.github.com/repos/Kotlin/kotlin-lsp/releases/latest")
       if (!releaseResponse.ok) {
         return
@@ -1402,6 +1424,7 @@ export const LuaLS: Info = {
     if (!bin) {
       if (flags.disableLspDownload) return
 
+      await logDownload(LuaLS, "https://api.github.com/repos/LuaLS/lua-language-server/releases/latest")
       const releaseResponse = await fetch("https://api.github.com/repos/LuaLS/lua-language-server/releases/latest")
       if (!releaseResponse.ok) {
         return
@@ -1629,6 +1652,7 @@ export const TerraformLS: Info = {
     if (!bin) {
       if (flags.disableLspDownload) return
 
+      await logDownload(TerraformLS, "https://api.releases.hashicorp.com/v1/releases/terraform-ls/latest")
       const releaseResponse = await fetch("https://api.releases.hashicorp.com/v1/releases/terraform-ls/latest")
       if (!releaseResponse.ok) {
         return
@@ -1702,6 +1726,7 @@ export const TexLab: Info = {
     if (!bin) {
       if (flags.disableLspDownload) return
 
+      await logDownload(TexLab, "https://api.github.com/repos/latex-lsp/texlab/releases/latest")
       const response = await fetch("https://api.github.com/repos/latex-lsp/texlab/releases/latest")
       if (!response.ok) {
         return
@@ -1874,6 +1899,7 @@ export const Tinymist: Info = {
     if (!bin) {
       if (flags.disableLspDownload) return
 
+      await logDownload(Tinymist, "https://api.github.com/repos/Myriad-Dreamin/tinymist/releases/latest")
       const response = await fetch("https://api.github.com/repos/Myriad-Dreamin/tinymist/releases/latest")
       if (!response.ok) {
         return

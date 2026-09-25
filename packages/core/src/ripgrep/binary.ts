@@ -105,7 +105,11 @@ export namespace RipgrepBinary {
             const url = `https://github.com/BurntSushi/ripgrep/releases/download/${VERSION}/${filename}`
             const archive = path.join(Global.Path.bin, filename)
 
-            yield* Effect.logInfo("downloading ripgrep", { url })
+            yield* Effect.logInfo("downloading ripgrep", {
+              url,
+              version: VERSION,
+              reason: "grep, glob, and file search need rg and none was found on PATH",
+            })
             yield* fs.ensureDir(Global.Path.bin).pipe(Effect.orDie)
             const bytes = yield* HttpClientRequest.get(url).pipe(
               http.execute,

@@ -1,6 +1,6 @@
 # 07 Binaries, LSP, Tree-sitter
 
-**Status:** not started (revised for explicit egress)
+**Status:** done
 
 ## 1. Goal
 
@@ -18,7 +18,7 @@ Core tools work without a first-use download. Executable downloads that remain a
 
 | Id | Change | Notes |
 |---|---|---|
-| B1 | Bundle ripgrep: fetch per-target `rg` at build time and embed with `with { type: "file" }` (same pattern as `image.ts:5`). Delete the runtime download. Resolution order: bundled, then PATH. | Add the ripgrep license notice to the repo. |
+| B1 | Keep upstream's first-use ripgrep download and log it. Resolution order stays PATH first, then `Global.Path.bin/rg`, then download of the pinned version from the BurntSushi/ripgrep GitHub release. One `Effect.logInfo` line before the download names the URL, the pinned version, and the reason. | User decision: bundling was implemented first (per-target fetch in `build.ts`, `with { type: "file" }` embed, license notice) and reverted because it was more upstream divergence than the privacy gain justified: the download carries no user data and is class T. Documented first-launch destination for the harness allowlist: `https://github.com/BurntSushi/ripgrep/releases/download/15.1.0/ripgrep-15.1.0-<platform>.<tar.gz|zip>` (`<platform>` is one of `aarch64-apple-darwin`, `aarch64-unknown-linux-gnu`, `x86_64-apple-darwin`, `x86_64-unknown-linux-musl`, `aarch64-pc-windows-msvc`, `i686-pc-windows-msvc`, `x86_64-pc-windows-msvc`). Upstream verifies only that the response body is non-empty; there is no checksum, and none was added. |
 | B2 | Make `OPENCODE_DISABLE_LSP_DOWNLOAD` gate the ten `Npm.which` LSP branches the same way it gates the direct downloads. | One-line condition per site. Keep the downloads themselves; they are user-visible tooling (class A only because they run without a prompt, no user data). |
 | B3 | Log one line before an LSP server, formatter, or grammar download, naming the destination and the reason (which file type triggered it). | Visibility. Harness S14 asserts the log and the absence of context markers. |
 | B4 | Tree-sitter: no change beyond B3 logging. Grammar fetches carry no user data and are class T under `docs/privacy-model.md` section 6. Record in the divergence log that this is a known first-use download. | Vendoring can be a later improvement. Downloads stay on by default; turning them off would degrade first run for no privacy gain. |
@@ -37,3 +37,18 @@ Core tools work without a first-use download. Executable downloads that remain a
 
 | Upstream file | Change | Reason |
 |---|---|---|
+| `packages/core/src/ripgrep/binary.ts` | The existing `downloading ripgrep` log line now also carries `version` and `reason`, in the same shape as the LSP `logDownload` line. Download, extraction, and resolution order are unchanged from upstream. | B1 |
+| `packages/opencode/src/lsp/server.ts` | `Typescript.spawn` and `Biome.spawn` now return before `Npm.which` when `disableLspDownload` is set, matching the other eight npm sites. One `logDownload` line (server id, URL, extensions) precedes the first network request of every direct-download flow (eslint, elixir-ls, zls, clangd, jdtls, kotlin-lsp, lua-language-server, terraform-ls, texlab, tinymist) and the Roslyn `dotnet tool install`. The helper runs `Effect.logInfo` through a `ManagedRuntime` built on `Observability.layer` with the shared memo map because spawn functions are plain async code. | B2, B3 |
+| `packages/core/src/npm.ts` | One `Effect.logInfo("installing npm package", { pkg, registry })` line before `Npm.which` falls through to `add(pkg)`. This covers the LSP npm servers and the prettier, oxfmt, and biome formatter installs in one place, and fires only when an install actually happens. | B3 |
+| `packages/opencode/src/ide/index.ts` | `Ide.install`, `AlreadyInstalledError`, and `InstallFailedError` are deleted with their unused imports. | B5 |
+| Tree-sitter grammars | No change. `packages/tui/src/parsers-config.ts` lists grammar `.wasm` and query URLs on github.com and raw.githubusercontent.com that `@opentui/core` fetches on first use of a language in the TUI. The fetch happens inside the library, so no log line is possible without patching it. Known first-use download, class T. | B4 |
+
+## 7. Cross-region notes
+
+- `packages/core/src/npm.ts` belongs to `05-plugins-npm.md`; it received one log line (B3) and nothing else. The npm install policy stays with plan 05.
+- `packages/opencode/src/format/formatter.ts` is not in the owned list and is unchanged; its three `Npm.which` calls are covered by the log line inside `Npm.which`.
+- `packages/opencode/script/build.ts` is unchanged; the `--user-agent` line stays with plan 09.
+- `packages/script/src/index.ts` read the deleted `.github/TEAM_MEMBERS` at import time, so every build failed before compiling. Fixed in a separate commit (`fix(hermit): build without .github/TEAM_MEMBERS`); belongs to `13-strip.md`.
+- Building requires bun ^1.3.14 (`packages/script` version guard, `packageManager` in `package.json`). The machine had 1.3.6; builds were verified with a bun 1.3.14 installed outside the repo. `bun run build --skip-install` without `--single` fails at the first cross target on the platform packages the skipped install step provides; pre-existing.
+- Verification of the built binary observed the `@opencode-ai/plugin` background install attempt against the npm registry on first run (`background dependency install failed ... No matching version`). That is plan 05's M3, not changed here.
+- Harness (`11`) first-launch allowlist: the ripgrep release URL above, `https://api.github.com/repos/*/releases/latest` and the asset hosts used by the LSP downloads in `lsp/server.ts`, `https://api.nuget.org` for Roslyn, and the configured npm registry for `Npm.which`.
