@@ -191,7 +191,7 @@ it.live("a small_model on a remote provider is refused during a private session"
       Effect.gen(function* () {
         const provider = yield* Provider.Service
         const small = yield* provider.getSmallModel(TEST)
-        expect(small?.providerID).toBe("remote")
+        expect(String(small?.providerID)).toBe("remote")
         expect(small?.permitted).toBe(false)
         const result = streamText({
           model: yield* provider.getLanguage(small!),
