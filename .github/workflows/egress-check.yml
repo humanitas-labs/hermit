@@ -1,0 +1,54 @@
+name: egress-check
+
+# Network-inspection verification of the acceptance contract
+# (.plan/11-verification.md). Builds the binary and runs every scenario inside
+# a user+network namespace where all addresses route to loopback, so any
+# attempt to leave the process, proxy-aware or not, is recorded and asserted
+# against script/egress-check/allowlist.json.
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  egress:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read Bun version
+        id: bun
+        run: echo "version=$(node -e 'console.log(require("./package.json").packageManager.split("@")[1])')" >> "$GITHUB_OUTPUT"
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ steps.bun.outputs.version }}
+
+      - name: Install
+        run: bun install --frozen-lockfile
+
+      # Ubuntu 24.04 restricts unprivileged user namespaces through AppArmor.
+      # The harness needs `unshare -rnm` (user, net, mount), so lift that one
+      # restriction for the job. Nothing else runs as root.
+      - name: Allow unprivileged user namespaces
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+
+      - name: Run egress check
+        run: script/egress-check/run.sh --idle 90
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: egress-check-report
+          path: |
+            script/egress-check/results/report.md
+            script/egress-check/results/results.json
+            script/egress-check/results/runs/**/output.txt
+          if-no-files-found: ignore
