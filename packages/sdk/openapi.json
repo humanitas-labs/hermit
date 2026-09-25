@@ -6608,170 +6608,6 @@
         ]
       }
     },
-    "/session/{sessionID}/share": {
-      "post": {
-        "tags": ["session"],
-        "operationId": "session.share",
-        "parameters": [
-          {
-            "name": "sessionID",
-            "in": "path",
-            "schema": {
-              "type": "string",
-              "pattern": "^ses"
-            },
-            "required": true
-          },
-          {
-            "name": "directory",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            },
-            "required": false
-          },
-          {
-            "name": "workspace",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            },
-            "required": false
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successfully shared session",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Session"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BadRequestError"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "NotFoundError",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/NotFoundError"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "InternalServerError",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/effect_HttpApiError_InternalServerError"
-                }
-              }
-            }
-          }
-        },
-        "description": "Create a shareable link for a session, allowing others to view the conversation.",
-        "summary": "Share session",
-        "x-codeSamples": [
-          {
-            "lang": "js",
-            "source": "import { createOpencodeClient } from \"@opencode-ai/sdk\n\nconst client = createOpencodeClient()\nawait client.session.share({\n  ...\n})"
-          }
-        ]
-      },
-      "delete": {
-        "tags": ["session"],
-        "operationId": "session.unshare",
-        "parameters": [
-          {
-            "name": "sessionID",
-            "in": "path",
-            "schema": {
-              "type": "string",
-              "pattern": "^ses"
-            },
-            "required": true
-          },
-          {
-            "name": "directory",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            },
-            "required": false
-          },
-          {
-            "name": "workspace",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            },
-            "required": false
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successfully unshared session",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Session"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BadRequestError"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "NotFoundError",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/NotFoundError"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "InternalServerError",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/effect_HttpApiError_InternalServerError"
-                }
-              }
-            }
-          }
-        },
-        "description": "Remove the shareable link for a session, making it private again.",
-        "summary": "Unshare session",
-        "x-codeSamples": [
-          {
-            "lang": "js",
-            "source": "import { createOpencodeClient } from \"@opencode-ai/sdk\n\nconst client = createOpencodeClient()\nawait client.session.unshare({\n  ...\n})"
-          }
-        ]
-      }
-    },
     "/session/{sessionID}/summarize": {
       "post": {
         "tags": ["session"],
@@ -15579,16 +15415,6 @@
             "required": ["input", "output", "reasoning", "cache"],
             "additionalProperties": false
           },
-          "share": {
-            "type": "object",
-            "properties": {
-              "url": {
-                "type": "string"
-              }
-            },
-            "required": ["url"],
-            "additionalProperties": false
-          },
           "title": {
             "type": "string"
           },
@@ -19559,7 +19385,6 @@
                             "enum": [
                               "session.list",
                               "session.new",
-                              "session.share",
                               "session.interrupt",
                               "session.compact",
                               "session.page.up",
@@ -21001,13 +20826,6 @@
               ]
             }
           },
-          "share": {
-            "type": "string",
-            "enum": ["manual", "auto", "disabled"]
-          },
-          "autoshare": {
-            "type": "boolean"
-          },
           "autoupdate": {
             "anyOf": [
               {
@@ -21235,15 +21053,6 @@
           },
           "attachment": {
             "$ref": "#/components/schemas/AttachmentConfig"
-          },
-          "enterprise": {
-            "type": "object",
-            "properties": {
-              "url": {
-                "type": "string"
-              }
-            },
-            "additionalProperties": false
           },
           "tool_output": {
             "type": "object",
@@ -21832,16 +21641,6 @@
               }
             },
             "required": ["input", "output", "reasoning", "cache"],
-            "additionalProperties": false
-          },
-          "share": {
-            "type": "object",
-            "properties": {
-              "url": {
-                "type": "string"
-              }
-            },
-            "required": ["url"],
             "additionalProperties": false
           },
           "title": {
@@ -22816,17 +22615,6 @@
           }
         }
       },
-      "effect_HttpApiError_InternalServerError": {
-        "type": "object",
-        "properties": {
-          "_tag": {
-            "type": "string",
-            "enum": ["InternalServerError"]
-          }
-        },
-        "required": ["_tag"],
-        "additionalProperties": false
-      },
       "TextPartInput": {
         "type": "object",
         "properties": {
@@ -23027,7 +22815,6 @@
                     "enum": [
                       "session.list",
                       "session.new",
-                      "session.share",
                       "session.interrupt",
                       "session.compact",
                       "session.page.up",
@@ -24115,7 +23902,6 @@
                     "enum": [
                       "session.list",
                       "session.new",
-                      "session.share",
                       "session.interrupt",
                       "session.compact",
                       "session.page.up",
@@ -32554,7 +32340,6 @@
                     "enum": [
                       "session.list",
                       "session.new",
-                      "session.share",
                       "session.interrupt",
                       "session.compact",
                       "session.page.up",

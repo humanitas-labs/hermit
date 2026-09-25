@@ -1,8 +1,8 @@
 {
   "version": "7",
   "dialect": "sqlite",
-  "id": "873f5154-802f-4b03-82da-39671ccfa439",
-  "prevIds": ["f14a9b18-8207-487e-a3d3-227e629ba9ad"],
+  "id": "6d19696f-83ae-4802-b6a4-aec634326fd9",
+  "prevIds": ["873f5154-802f-4b03-82da-39671ccfa439"],
   "ddl": [
     {
       "name": "workspace",
@@ -62,10 +62,6 @@
     },
     {
       "name": "todo",
-      "entityType": "tables"
-    },
-    {
-      "name": "session_share",
       "entityType": "tables"
     },
     {
@@ -949,16 +945,6 @@
       "table": "session"
     },
     {
-      "type": "text",
-      "notNull": false,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "share_url",
-      "entityType": "columns",
-      "table": "session"
-    },
-    {
       "type": "integer",
       "notNull": false,
       "autoincrement": false,
@@ -1219,66 +1205,6 @@
       "table": "todo"
     },
     {
-      "type": "text",
-      "notNull": false,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "session_id",
-      "entityType": "columns",
-      "table": "session_share"
-    },
-    {
-      "type": "text",
-      "notNull": true,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "id",
-      "entityType": "columns",
-      "table": "session_share"
-    },
-    {
-      "type": "text",
-      "notNull": true,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "secret",
-      "entityType": "columns",
-      "table": "session_share"
-    },
-    {
-      "type": "text",
-      "notNull": true,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "url",
-      "entityType": "columns",
-      "table": "session_share"
-    },
-    {
-      "type": "integer",
-      "notNull": true,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "time_created",
-      "entityType": "columns",
-      "table": "session_share"
-    },
-    {
-      "type": "integer",
-      "notNull": true,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "time_updated",
-      "entityType": "columns",
-      "table": "session_share"
-    },
-    {
       "columns": ["project_id"],
       "tableTo": "project",
       "columnsTo": ["id"],
@@ -1400,17 +1326,6 @@
       "table": "todo"
     },
     {
-      "columns": ["session_id"],
-      "tableTo": "session",
-      "columnsTo": ["id"],
-      "onUpdate": "NO ACTION",
-      "onDelete": "CASCADE",
-      "nameExplicit": false,
-      "name": "fk_session_share_session_id_session_id_fk",
-      "entityType": "fks",
-      "table": "session_share"
-    },
-    {
       "columns": ["project_id", "directory"],
       "nameExplicit": false,
       "name": "project_directory_pk",
@@ -1513,13 +1428,6 @@
       "nameExplicit": false,
       "name": "session_pk",
       "table": "session",
-      "entityType": "pks"
-    },
-    {
-      "columns": ["session_id"],
-      "nameExplicit": false,
-      "name": "session_share_pk",
-      "table": "session_share",
       "entityType": "pks"
     },
     {

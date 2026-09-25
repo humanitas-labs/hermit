@@ -735,19 +735,6 @@ it.instance("handles command configuration", () =>
   }),
 )
 
-it.instance("migrates autoshare to share field", () =>
-  Effect.gen(function* () {
-    const test = yield* TestInstance
-    yield* writeConfigEffect(test.directory, {
-      $schema: "https://opencode.ai/config.json",
-      autoshare: true,
-    })
-    const config = yield* Config.use.get()
-    expect(config.share).toBe("auto")
-    expect(config.autoshare).toBe(true)
-  }),
-)
-
 it.instance("migrates mode field to agent field", () =>
   Effect.gen(function* () {
     const test = yield* TestInstance
@@ -1235,15 +1222,15 @@ it.instance(
     yield* writeManagedSettingsEffect({
       $schema: "https://opencode.ai/config.json",
       model: "managed/model",
-      share: "disabled",
+      logLevel: "DEBUG",
     })
 
     const config = yield* Config.use.get()
     expect(config.model).toBe("managed/model")
-    expect(config.share).toBe("disabled")
+    expect(config.logLevel).toBe("DEBUG")
     expect(config.username).toBe("testuser")
   }),
-  { config: { model: "user/model", share: "auto", username: "testuser" } },
+  { config: { model: "user/model", logLevel: "INFO", username: "testuser" } },
 )
 
 it.instance(
@@ -1804,7 +1791,7 @@ test("parseManagedPlist strips MDM metadata keys", async () => {
           PayloadUUID: "AAAA-BBBB-CCCC",
           PayloadVersion: 1,
           _manualProfile: true,
-          share: "disabled",
+          logLevel: "DEBUG",
           model: "mdm/model",
         }),
       ),
@@ -1812,7 +1799,7 @@ test("parseManagedPlist strips MDM metadata keys", async () => {
     ),
     "test:mobileconfig",
   )
-  expect(config.share).toBe("disabled")
+  expect(config.logLevel).toBe("DEBUG")
   expect(config.model).toBe("mdm/model")
   // MDM keys must not leak into the parsed config
   expect((config as any).PayloadUUID).toBeUndefined()
