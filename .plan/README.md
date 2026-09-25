@@ -53,7 +53,7 @@ Each plan file carries a status line: `not started`, `in progress`, `done`, or `
 
 Each step leaves a typechecking, runnable binary. See `00-audit.md` section 9 for the per-region order inside each phase.
 
-0. Strip the repository (`13`). Tier 1 touches nothing the privacy regions edit, so the line references in `00`-`12` (anchored at upstream `adee738d1e`, all inside `packages/opencode`, `core`, `tui`, and `plugin`) stay valid. If Tier 2 (web UI stack) runs, plans `02`, `03`, and `08` lose their `packages/app` and `packages/client` items; see the notes in those files.
+0. Strip the repository (`13`). Done: Tier 1 in `1397b1cc7e`, Tier 2 in `2f433b5612`. Line references in `00`-`12` are anchored at upstream `adee738d1e` inside `packages/opencode`, `core`, `tui`, and `plugin`, which the strip did not touch. The only privacy item the strip already landed is `08` V1 and V5.
 1. Finalize the acceptance contract above and the inference-path inventory in `10` section 3.0.
 2. Build the verification harness in `11` and record the baseline failures against the stripped but otherwise unmodified binary.
 3. Implement the inference policy (`10`) and remove implicit application egress (`01`-`09`), adding a passing harness assertion as each region lands.

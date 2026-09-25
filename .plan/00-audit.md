@@ -4,7 +4,7 @@
 
 ## 1. Architecture map (what matters for privacy)
 
-The shipped `opencode` binary is one Bun-compiled executable built by `packages/opencode/script/build.ts` from `packages/opencode/src/index.ts`. It bundles these workspace packages: `core`, `llm`, `plugin`, `protocol`, `schema`, `server`, `tui`, `sdk`, `codemode`, `script`, plus the web UI from `packages/app` as static files. Packages `web`, `console`, `stats`, `desktop`, `function`, `enterprise`, `slack`, `sdk-next`, `client`, `infra` are not in the binary.
+The shipped `opencode` binary is one Bun-compiled executable built by `packages/opencode/script/build.ts` from `packages/opencode/src/index.ts`. It bundles these workspace packages: `core`, `llm`, `plugin`, `protocol`, `schema`, `server`, `tui`, `sdk`, `codemode`, `script`. At the audited commit it also embedded the web UI from `packages/app` as static files; `13-strip.md` has since deleted that and every package not in the binary.
 
 Layers that matter:
 

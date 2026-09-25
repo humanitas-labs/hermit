@@ -26,7 +26,7 @@ No account concept exists. No config source is remote. The only credential store
 | R1 | Delete the account module, CLI command, SQL tables, and a migration that drops the tables. | Check `packages/core/src/database` for the migration pattern before adding one. |
 | R2 | Delete the console-config merge in `config.ts:492-530` and the `OPENCODE_CONSOLE_TOKEN` env write at `:505-506`. | Also remove "console managed" provider tracking wherever `consoleManaged` is read (grep). |
 | R3 | Delete the well-known loop `config.ts:370-409`, the `wellknown` auth type, and `providers login <url>`. | This removes the remote-command execution at `providers.ts:334`. |
-| R4 | Delete the `experimental` HttpApi org routes and run `bun run generate` from `packages/client`. | `AGENTS.md` rule. Check `packages/tui` and `packages/app` for callers of the removed SDK methods. |
+| R4 | Delete the `experimental` HttpApi org routes and run `bun run generate` from the repo root to rebuild the SDK. | `AGENTS.md` rule. Check `packages/tui` for callers of the removed SDK methods. |
 | R5 | Keep `opencode auth login` for API keys (rename to `hermit auth`), keep `auth.json` with types `api` and `oauth`; the provider catalog and its OAuth plugins stay per `01` section 4. | Fireworks uses `api`. |
 | R6 | Remove `OPENCODE_AUTH_CONTENT` unless there is a concrete container use case. Recommendation: keep it, it is local-only and useful for containers. | |
 
@@ -37,7 +37,7 @@ No account concept exists. No config source is remote. The only credential store
 
 ## 5. Verification
 
-- `bun typecheck` in `packages/core`, `packages/opencode`, `packages/tui`, and `packages/app` if it survives `13` Tier 2. The `bun run generate` step in R4 applies only while `packages/client` exists.
+- `bun typecheck` in `packages/core`, `packages/opencode`, `packages/tui`, and `packages/server`.
 - `grep -rn "console" packages/opencode/src/config` returns nothing account-related.
 - Fresh start with no DB creates no `account` tables.
 

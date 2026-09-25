@@ -188,7 +188,8 @@ When uncertain between adding complexity and keeping Hermit smaller, prefer the 
 The conventions below are inherited from upstream OpenCode and remain in force. Following them keeps Hermit's diff against upstream small and makes porting upstream fixes easier.
 
 - To regenerate the legacy JavaScript SDK, run `./packages/sdk/js/script/build.ts`.
-- Keep runtime dependencies directed from Schema to Core and Protocol, then from Core and Protocol to Server. Client runtime code may depend on Schema and Protocol but never Core or Server; `sdk-next` composes Client, Core, and Server.
+- Keep runtime dependencies directed from Schema to Core and Protocol, then from Core and Protocol to Server. The TUI and plugins consume the local API only through `@opencode-ai/sdk`, never Core or Server directly.
+- After changing the public Protocol or Server `HttpApi`, run `bun run generate` from the repo root to rebuild the SDK and `packages/sdk/openapi.json`. Do not edit generated files directly.
 - The default branch in this repo is `master`. The upstream OpenCode remote is named `upstream`; its default branch is `dev`.
 - Use `master` or `origin/master` for diffs. Use `upstream/dev` only when comparing against OpenCode.
 

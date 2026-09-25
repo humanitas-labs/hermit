@@ -15,18 +15,16 @@ The local server binds loopback only, never proxies to a remote host, and no CLI
 - `packages/opencode/src/cli/cmd/github.ts`, `github.handler.ts`, `github.shared.ts`, `pr.ts` (delete)
 - `packages/opencode/src/control-plane/*`, `packages/core/src/control-plane/*`, `httpapi/middleware/workspace-routing.ts`, `middleware/proxy.ts` (decision below)
 - `packages/opencode/src/cli/cmd/web.ts` (review; serves the embedded UI locally, keep)
-- `packages/app/src/context/highlights.tsx` lines 10, 169-175 (`opencode.ai/changelog.json` fetch in the embedded web UI)
-- `packages/app/src/entry.tsx` lines 133-137 (Sentry init, compiled out but present)
 
 ## 3. Changes
 
 | Id | Change | Notes |
 |---|---|---|
-| V1 | Delete the `app.opencode.ai` proxy fallback; a missing bundle returns 404. Delete the flag. Lands with `13` Tier 2 if Tier 2 runs first; otherwise here. | |
+| V1 | Done in `13` Tier 2 (commit `2f433b5612`): `server/shared/ui.ts` and the `web` command are deleted. | |
 | V2 | Delete mDNS and the `--mdns` options. Keep `--hostname` for users who deliberately expose the server on a LAN, but keep the default `127.0.0.1`. | mDNS depends on `bonjour-service`; drop the dependency. |
 | V3 | Delete the `github` command and handler (they depend on `api.opencode.ai` for the GitHub App installation lookup and the OIDC exchange). Keep `pr` if it only uses the GitHub API and `git`; it is user-requested network access. Drop `@actions/*` and any `@octokit/*` package no longer imported. | Check `cli/cmd/pr.ts` imports before deciding. |
 | V4 | Remote workspaces: delete `control-plane` remote adapter support, the proxy middleware, and `OPENCODE_EXPERIMENTAL_WORKSPACES`. Keep the local `worktree` adapter only if the worktree feature is wanted. Recommendation: keep worktrees, delete remote plumbing. | Large but experimental and off by default; can be deferred to a later pass. |
-| V5 | Only if `13` Tier 2 does not run. Embedded web UI: remove the changelog fetch and the Sentry init from `packages/app`. | The app package is bundled into the binary as static files, so it is in scope even though it runs in a browser. |
+| V5 | Done in `13` Tier 2: `packages/app` is deleted, taking the changelog fetch and Sentry init with it. | |
 
 ## 4. Preserve
 
