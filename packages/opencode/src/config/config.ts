@@ -6,6 +6,7 @@ import { pathToFileURL } from "url"
 import os from "os"
 import { mergeDeep } from "remeda"
 import { Global } from "@opencode-ai/core/global"
+import { HermitPolicy } from "@opencode-ai/core/hermit/policy"
 import fsNode from "fs/promises"
 import { Flag } from "@opencode-ai/core/flag/flag"
 import { Auth } from "../auth"
@@ -362,10 +363,39 @@ const layer = Layer.effect(
           result.plugin_origins = plugins
         })
 
-        const merge = (source: string, next: Info, kind?: ConfigPlugin.Scope) => {
-          result = mergeConfigConcatArrays(result, next)
-          return mergePluginOrigins(source, next.plugin, kind)
-        }
+        // Hermit: policy keys are user-level only. A project config may narrow the
+        // preset but cannot raise it or designate endpoints as user-owned.
+        const stripPolicy = Effect.fnUntraced(function* (source: string, next: Info, kind?: ConfigPlugin.Scope) {
+          const scope = kind ?? (yield* pluginScopeForSource(source))
+          if (scope !== "local") return next
+          const preset = next.hermit?.preset
+          const narrowed =
+            preset && result.hermit?.preset ? HermitPolicy.stricter(result.hermit.preset, preset) : undefined
+          if (preset && narrowed !== preset)
+            yield* Effect.logWarning("ignoring hermit.preset from project config; only user config may raise it", {
+              source,
+              preset,
+            })
+          const owners = Object.entries(next.provider ?? {}).filter(([, item]) => item.owner !== undefined)
+          if (owners.length)
+            yield* Effect.logWarning("ignoring provider owner from project config; user config only", {
+              source,
+              providers: owners.map(([id]) => id),
+            })
+          const { hermit, provider, ...rest } = next
+          return {
+            ...rest,
+            ...(narrowed ? { hermit: { ...hermit, preset: narrowed } } : {}),
+            ...(provider
+              ? { provider: Object.fromEntries(Object.entries(provider).map(([id, { owner, ...item }]) => [id, item])) }
+              : {}),
+          }
+        })
+
+        const merge = Effect.fnUntraced(function* (source: string, next: Info, kind?: ConfigPlugin.Scope) {
+          result = mergeConfigConcatArrays(result, yield* stripPolicy(source, next, kind))
+          return yield* mergePluginOrigins(source, next.plugin, kind)
+        })
 
         for (const [key, value] of Object.entries(auth)) {
           if (value.type === "wellknown") {
@@ -596,6 +626,10 @@ const layer = Layer.effect(
         if (Flag.OPENCODE_DISABLE_PRUNE) {
           result.compaction = { ...result.compaction, prune: false }
         }
+
+        // The native runtime and the V2 runner share one process-global executor;
+        // publish this instance's policy to it. It only narrows.
+        HermitPolicy.narrow(HermitPolicy.fromConfig(result))
 
         return {
           config: result,

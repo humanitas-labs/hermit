@@ -4,6 +4,7 @@ import { ModelsDev } from "@opencode-ai/core/models-dev"
 import { effectCmd, fail } from "../effect-cmd"
 import { UI } from "../ui"
 import { ProviderV2 } from "@opencode-ai/core/provider"
+import { HermitPolicy } from "@opencode-ai/core/hermit/policy"
 
 export const ModelsCommand = effectCmd({
   command: "models [provider]",
@@ -37,7 +38,9 @@ export const ModelsCommand = effectCmd({
       const p = providers[providerID]
       const sorted = Object.entries(p.models).sort(([a], [b]) => a.localeCompare(b))
       for (const [modelID, model] of sorted) {
-        process.stdout.write(`${providerID}/${modelID}`)
+        // Hermit: trust class of the resolved endpoint and whether the preset permits it.
+        const boundary = model.boundary ? HermitPolicy.label(model.boundary).toUpperCase() : "UNKNOWN"
+        process.stdout.write(`${providerID}/${modelID}\t${boundary}${model.permitted ? "" : " (not permitted)"}`)
         process.stdout.write(EOL)
         if (verbose) {
           process.stdout.write(JSON.stringify(model, null, 2))

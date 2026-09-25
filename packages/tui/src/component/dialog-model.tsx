@@ -9,6 +9,13 @@ import * as fuzzysort from "fuzzysort"
 import { useConnected } from "./use-connected"
 import { useSync } from "../context/sync"
 
+// Hermit: show the trust class of each model's endpoint and mark what the preset refuses.
+function boundaryFooter(model: { boundary?: "local" | "user" | "third-party"; permitted?: boolean }) {
+  if (!model.boundary) return
+  const label = model.boundary === "third-party" ? "THIRD PARTY" : model.boundary.toUpperCase()
+  return model.permitted === false ? `${label} · not permitted` : label
+}
+
 export function DialogModel(props: { providerID?: string }) {
   const local = useLocal()
   const sync = useSync()
@@ -40,8 +47,8 @@ export function DialogModel(props: { providerID?: string }) {
             title: model.name ?? item.modelID,
             description: provider.name,
             category,
-            disabled: provider.id === "opencode" && model.id.includes("-nano"),
-            footer: model.cost?.input === 0 && provider.id === "opencode" ? "Free" : undefined,
+            disabled: (provider.id === "opencode" && model.id.includes("-nano")) || model.permitted === false,
+            footer: boundaryFooter(model),
             onSelect: () => {
               onSelect(provider.id, model.id)
             },
@@ -78,8 +85,8 @@ export function DialogModel(props: { providerID?: string }) {
               ? "(Favorite)"
               : undefined,
             category: connected() ? provider.name : undefined,
-            disabled: provider.id === "opencode" && model.includes("-nano"),
-            footer: info.cost?.input === 0 && provider.id === "opencode" ? "Free" : undefined,
+            disabled: (provider.id === "opencode" && model.includes("-nano")) || info.permitted === false,
+            footer: boundaryFooter(info),
             onSelect() {
               onSelect(provider.id, model)
             },

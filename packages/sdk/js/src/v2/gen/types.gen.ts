@@ -1735,6 +1735,7 @@ export type AgentConfig = {
 
 export type ProviderConfig = {
   api?: string
+  owner?: "user"
   name?: string
   env?: Array<string>
   id?: string
@@ -1932,6 +1933,9 @@ export type Config = {
   autoupdate?: boolean | "notify"
   disabled_providers?: Array<string>
   enabled_providers?: Array<string>
+  hermit?: {
+    preset?: "private" | "trusted" | "external"
+  }
   model?: string
   small_model?: string
   default_agent?: string
@@ -2113,6 +2117,8 @@ export type Model = {
       [key: string]: unknown
     }
   }
+  boundary?: "local" | "user" | "third-party"
+  permitted?: boolean
 }
 
 export type Provider = {

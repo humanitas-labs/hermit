@@ -81,6 +81,10 @@ export const Model = Schema.Struct({
 
 export const Info = Schema.Struct({
   api: Schema.optional(Schema.String),
+  owner: Schema.optional(Schema.Literal("user")).annotate({
+    description:
+      "Mark this provider's endpoint as user-controlled so the trusted preset permits it. Requires options.baseURL. User-level config only",
+  }),
   name: Schema.optional(Schema.String),
   env: Schema.optional(Schema.mutable(Schema.Array(Schema.String))),
   id: Schema.optional(Schema.String),

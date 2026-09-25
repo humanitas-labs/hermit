@@ -58,6 +58,10 @@ import { usePromptMove } from "./move"
 import { readLocalAttachment } from "./local-attachment"
 import { useLocation } from "../../context/location"
 
+function boundaryLabel(boundary: "local" | "user" | "third-party") {
+  return boundary === "third-party" ? "THIRD PARTY" : boundary.toUpperCase()
+}
+
 registerOpencodeSpinner()
 
 export type PromptProps = {
@@ -211,6 +215,9 @@ export function Prompt(props: PromptProps) {
   const move = usePromptMove({ projectID: project.project, sessionID: () => props.sessionID })
   const [cursorVersion, setCursorVersion] = createSignal(0)
   const currentProviderLabel = createMemo(() => local.model.parsed().provider)
+  // Hermit: trust class of the selected model's endpoint.
+  const boundaryColor = (boundary: "local" | "user" | "third-party") =>
+    boundary === "local" ? theme.success : boundary === "user" ? theme.warning : theme.error
   const hasRightContent = createMemo(() => Boolean(props.right))
 
   function promptModelWarning() {
@@ -1462,6 +1469,13 @@ export function Prompt(props: PromptProps) {
                             {local.model.parsed().model}
                           </text>
                           <text fg={fadeColor(theme.textMuted, modelMetaAlpha())}>{currentProviderLabel()}</text>
+                          <Show when={local.model.parsed().boundary}>
+                            {(boundary) => (
+                              <text fg={fadeColor(boundaryColor(boundary()), modelMetaAlpha())}>
+                                {boundaryLabel(boundary())}
+                              </text>
+                            )}
+                          </Show>
                           <Show when={showVariant()}>
                             <text fg={fadeColor(theme.textMuted, variantMetaAlpha())}>·</text>
                             <text>

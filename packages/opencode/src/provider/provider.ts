@@ -31,6 +31,7 @@ import { ModelV2 } from "@opencode-ai/core/model"
 import { ModelStatus } from "./model-status"
 import { RuntimeFlags } from "@/effect/runtime-flags"
 import { ProviderError } from "./error"
+import { HermitPolicy } from "@opencode-ai/core/hermit/policy"
 
 const OPENAI_HEADER_TIMEOUT_DEFAULT = 300_000
 
@@ -1089,6 +1090,9 @@ export const Model = Schema.Struct({
   headers: Schema.Record(Schema.String, Schema.String),
   release_date: Schema.String,
   variants: optional(Schema.Record(Schema.String, Schema.Record(Schema.String, Schema.Any))),
+  // Hermit: trust class of the resolved endpoint and whether the active preset permits it.
+  boundary: optional(HermitPolicy.Class),
+  permitted: optional(Schema.Boolean),
 }).annotate({ identifier: "Model" })
 export type Model = Types.DeepMutable<Schema.Schema.Type<typeof Model>>
 
@@ -1212,6 +1216,7 @@ interface State {
   sdk: Map<string, BundledSDK>
   modelLoaders: Record<string, CustomModelLoader>
   varsLoaders: Record<string, CustomVarsLoader>
+  policy: HermitPolicy.Policy
 }
 
 export class Service extends Context.Service<Service, Interface>()("@opencode/Provider") {}
@@ -1718,6 +1723,26 @@ const layer = Layer.effect(
           }
         }
 
+        // Hermit: classify every model's resolved endpoint once so the UI can show
+        // the trust class and the picker can mark what the preset permits.
+        const policy = HermitPolicy.fromConfig(cfg)
+        for (const provider of Object.values(providers)) {
+          for (const model of Object.values(provider.models)) {
+            const url = endpoint(model, { ...provider.options, ...model.options }, varsLoaders[provider.id], envs)
+            model.boundary = url && URL.canParse(url) ? HermitPolicy.classify(new URL(url), policy) : "third-party"
+            model.permitted = HermitPolicy.permits(policy.preset, model.boundary)
+          }
+        }
+        const usable = Object.values(providers).flatMap((provider) =>
+          Object.values(provider.models).filter((model) => model.permitted),
+        )
+        yield* Effect.logInfo("hermit inference policy", {
+          preset: policy.preset,
+          user: Array.from(policy.user),
+          permitted: usable.length,
+          total: Object.values(providers).reduce((sum, provider) => sum + Object.keys(provider.models).length, 0),
+        })
+
         return {
           models: languages,
           providers,
@@ -1725,11 +1750,31 @@ const layer = Layer.effect(
           sdk,
           modelLoaders,
           varsLoaders,
+          policy,
         }
       }),
     )
 
     const list = Effect.fn("Provider.list")(() => InstanceState.use(state, (s) => s.providers))
+
+    // Effective base URL for a model: config `baseURL` wins over the catalog URL,
+    // then provider vars and environment placeholders are substituted.
+    function endpoint(
+      model: Model,
+      options: Record<string, any>,
+      loader: CustomVarsLoader | undefined,
+      envs: Record<string, string | undefined>,
+    ) {
+      const raw =
+        typeof options["baseURL"] === "string" && options["baseURL"] !== "" ? options["baseURL"] : model.api.url
+      if (!raw) return
+      const vars = loader ? loader(options) : {}
+      const withVars = Object.entries(vars).reduce(
+        (url, [key, value]) => url.replaceAll("${" + key + "}", value),
+        raw as string,
+      )
+      return withVars.replace(/\$\{([^}]+)\}/g, (item, key) => envs[String(key)] ?? item)
+    }
 
     async function resolveSDK(model: Model, s: State, envs: Record<string, string | undefined>) {
       try {
@@ -1756,26 +1801,7 @@ const layer = Layer.effect(
           options["includeUsage"] = true
         }
 
-        const baseURL = iife(() => {
-          let url =
-            typeof options["baseURL"] === "string" && options["baseURL"] !== "" ? options["baseURL"] : model.api.url
-          if (!url) return
-
-          const loader = s.varsLoaders[model.providerID]
-          if (loader) {
-            const vars = loader(options)
-            for (const [key, value] of Object.entries(vars)) {
-              const field = "${" + key + "}"
-              url = url.replaceAll(field, value)
-            }
-          }
-
-          url = url.replace(/\$\{([^}]+)\}/g, (item, key) => {
-            const val = envs[String(key)]
-            return val ?? item
-          })
-          return url
-        })
+        const baseURL = endpoint(model, options, s.varsLoaders[model.providerID], envs)
 
         if (baseURL !== undefined) options["baseURL"] = baseURL
         if (options["apiKey"] === undefined && provider.key) options["apiKey"] = provider.key
@@ -1818,7 +1844,8 @@ const layer = Layer.effect(
           const combined = signals.length === 0 ? null : signals.length === 1 ? signals[0] : AbortSignal.any(signals)
           if (combined) opts.signal = combined
 
-          const res = await fetchFn(input, {
+          // Hermit: the destination check runs here, before any provider or plugin fetch sees the request.
+          const res = await HermitPolicy.guardFetch({ fetch: fetchFn, policy: () => s.policy })(input, {
             ...opts,
             // @ts-ignore see here: https://github.com/oven-sh/bun/issues/16682
             timeout: false,
@@ -1955,7 +1982,14 @@ const layer = Layer.effect(
         { provider: toPublicInfo(provider) },
         { model: undefined },
       )
-      if (experimental.model) {
+      if (experimental.model && experimental.model.providerID !== providerID) {
+        // Hermit: a plugin may pick a smaller model, not a different provider.
+        yield* Effect.logWarning("ignoring plugin small model from a different provider", {
+          providerID,
+          suggested: experimental.model.providerID,
+        })
+      }
+      if (experimental.model && experimental.model.providerID === providerID) {
         return {
           ...experimental.model,
           id: ModelV2.ID.make(experimental.model.id),

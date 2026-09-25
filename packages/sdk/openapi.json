@@ -20714,6 +20714,10 @@
           "api": {
             "type": "string"
           },
+          "owner": {
+            "type": "string",
+            "enum": ["user"]
+          },
           "name": {
             "type": "string"
           },
@@ -21277,6 +21281,16 @@
               "type": "string"
             }
           },
+          "hermit": {
+            "type": "object",
+            "properties": {
+              "preset": {
+                "type": "string",
+                "enum": ["private", "trusted", "external"]
+              }
+            },
+            "additionalProperties": false
+          },
           "model": {
             "type": "string"
           },
@@ -21816,6 +21830,13 @@
             "additionalProperties": {
               "type": "object"
             }
+          },
+          "boundary": {
+            "type": "string",
+            "enum": ["local", "user", "third-party"]
+          },
+          "permitted": {
+            "type": "boolean"
           }
         },
         "required": [

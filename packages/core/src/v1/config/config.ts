@@ -71,6 +71,14 @@ export const Info = Schema.Struct({
   enabled_providers: Schema.optional(Schema.mutable(Schema.Array(Schema.String))).annotate({
     description: "When set, ONLY these providers will be enabled. All other providers will be ignored",
   }),
+  hermit: Schema.optional(
+    Schema.Struct({
+      preset: Schema.optional(Schema.Literals(["private", "trusted", "external"])).annotate({
+        description:
+          "Inference boundary. private permits only loopback endpoints, trusted adds providers marked owner: user, external adds third-party providers. User-level config only; a project may only narrow it",
+      }),
+    }),
+  ).annotate({ description: "Hermit privacy policy. Read from user-level config only" }),
   model: Schema.optional(Schema.String).annotate({
     description: "Model to use in the format of provider/model, eg anthropic/claude-2",
   }),

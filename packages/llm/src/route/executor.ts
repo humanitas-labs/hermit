@@ -329,8 +329,10 @@ const toHttpError = (redactedNames: ReadonlyArray<string | RegExp>) => (error: u
   }
   const request = "request" in error ? error.request : undefined
   if (error.reason._tag === "TransportError") {
+    // A fetch wrapper (Hermit's destination check) may reject with its own error; keep its message.
+    const cause = error.reason.cause
     return transportError({
-      message: error.reason.description ?? "HTTP transport failed",
+      message: error.reason.description ?? (cause instanceof Error ? cause.message : "HTTP transport failed"),
       kind: error.reason._tag,
       request,
     })
