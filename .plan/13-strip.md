@@ -18,36 +18,36 @@ Tier 2 is a product decision (TUI-only) and runs as its own commit once confirme
 
 `packages/opencode/script/build.ts` bundles these workspace packages. They are the product and stay.
 
-| Package | Role |
-|---|---|
-| `opencode` | CLI, TUI entry, session loop, tools, providers |
-| `core`, `llm`, `server`, `protocol`, `schema` | V2 core, native LLM runtime, local HTTP API |
-| `tui` | terminal UI |
-| `plugin`, `sdk` | plugin API and the generated TypeScript client for the local API, consumed by the TUI and plugins |
-| `codemode`, `script` | confined code execution tool; version helper |
-| `effect-drizzle-sqlite`, `effect-sqlite-node`, `http-recorder` | SQLite layer; HTTP cassette recorder used by core and llm tests |
+| Package                                                        | Role                                                                                              |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `opencode`                                                     | CLI, TUI entry, session loop, tools, providers                                                    |
+| `core`, `llm`, `server`, `protocol`, `schema`                  | V2 core, native LLM runtime, local HTTP API                                                       |
+| `tui`                                                          | terminal UI                                                                                       |
+| `plugin`, `sdk`                                                | plugin API and the generated TypeScript client for the local API, consumed by the TUI and plugins |
+| `codemode`, `script`                                           | confined code execution tool; version helper                                                      |
+| `effect-drizzle-sqlite`, `effect-sqlite-node`, `http-recorder` | SQLite layer; HTTP cassette recorder used by core and llm tests                                   |
 
 ## 4. Tier 1: not in the binary, zero behavior change
 
-| Target | Files | What it is |
-|---|---|---|
-| `packages/console` | 589 | opencode.ai hosted console, includes 41 MB of landing-page video |
-| `packages/web` | 705 | opencode.ai marketing and docs site |
-| `packages/desktop` | 306 | Tauri desktop app |
-| `packages/stats`, `STATS.md`, `script/stats.ts` | 117 | download-stats dashboard |
-| `packages/enterprise`, `function`, `slack`, `storybook`, `sdk-next`, `identity`, `docs`, `containers`, `cli` | 133 | enterprise UI, Cloudflare worker, Slack bot, Storybook, dead SDK successor, logo PNGs, Mintlify docs, Docker build images, experimental second CLI (`lildax`) |
-| `artifacts/` | 20 | promotional video project |
-| `infra/`, `sst.config.ts`, `sst-env.d.ts` | 10 | SST deployment (AWS, Cloudflare, Stripe, PlanetScale) |
-| `github/`, `sdks/` | 26 | GitHub Action package, VS Code extension |
-| `nix/`, `flake.nix`, `flake.lock` | 8 | Nix packaging |
-| `.github/` | 36 | upstream ops workflows: publish, deploy, Discord, triage, locale sync, stats |
-| `script/` | 18 | publish, release, changelog, beta, translate, duplicate-PR, issue closers. `format.ts` and `generate.ts` became the root `format` and `generate` package scripts; the pre-push hook installer was dropped |
-| `.opencode/`, `.husky/`, `.vscode/`, `.zed/` | 43 | upstream agent config, hooks, editor settings |
-| `CONTRIBUTING.md` | 1 | upstream process; replaced by `AGENTS.md` and `docs/fork.md` |
-| root `package.json` | | remove `packages/console/*`, `packages/stats/*`, `packages/slack` workspaces; `dev:desktop`, `dev:console`, `dev:stats`, `dev:storybook`, `sso`, `translate:app`, `random`, `prepare` scripts; `@aws-sdk/client-s3`, `heap-snapshot-toolkit`, `@actions/artifact`, `sst`, `husky` deps; Sentry, Electron and SolidStart catalog entries |
-| `turbo.json` | | drop task entries for removed packages |
-| `bunfig.toml` | | drop Electron entries from `minimumReleaseAgeExcludes` |
-| `patches/` | | drop patches whose consumer left the lockfile after `bun install` |
+| Target                                                                                                       | Files | What it is                                                                                                                                                                                                                                                                                                                              |
+| ------------------------------------------------------------------------------------------------------------ | ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/console`                                                                                           | 589   | opencode.ai hosted console, includes 41 MB of landing-page video                                                                                                                                                                                                                                                                        |
+| `packages/web`                                                                                               | 705   | opencode.ai marketing and docs site                                                                                                                                                                                                                                                                                                     |
+| `packages/desktop`                                                                                           | 306   | Tauri desktop app                                                                                                                                                                                                                                                                                                                       |
+| `packages/stats`, `STATS.md`, `script/stats.ts`                                                              | 117   | download-stats dashboard                                                                                                                                                                                                                                                                                                                |
+| `packages/enterprise`, `function`, `slack`, `storybook`, `sdk-next`, `identity`, `docs`, `containers`, `cli` | 133   | enterprise UI, Cloudflare worker, Slack bot, Storybook, dead SDK successor, logo PNGs, Mintlify docs, Docker build images, experimental second CLI (`lildax`)                                                                                                                                                                           |
+| `artifacts/`                                                                                                 | 20    | promotional video project                                                                                                                                                                                                                                                                                                               |
+| `infra/`, `sst.config.ts`, `sst-env.d.ts`                                                                    | 10    | SST deployment (AWS, Cloudflare, Stripe, PlanetScale)                                                                                                                                                                                                                                                                                   |
+| `github/`, `sdks/`                                                                                           | 26    | GitHub Action package, VS Code extension                                                                                                                                                                                                                                                                                                |
+| `nix/`, `flake.nix`, `flake.lock`                                                                            | 8     | Nix packaging                                                                                                                                                                                                                                                                                                                           |
+| `.github/`                                                                                                   | 36    | upstream ops workflows: publish, deploy, Discord, triage, locale sync, stats                                                                                                                                                                                                                                                            |
+| `script/`                                                                                                    | 18    | publish, release, changelog, beta, translate, duplicate-PR, issue closers. `format.ts` and `generate.ts` became the root `format` and `generate` package scripts; the pre-push hook installer was dropped                                                                                                                               |
+| `.opencode/`, `.husky/`, `.vscode/`, `.zed/`                                                                 | 43    | upstream agent config, hooks, editor settings                                                                                                                                                                                                                                                                                           |
+| `CONTRIBUTING.md`                                                                                            | 1     | upstream process; replaced by `AGENTS.md` and `docs/fork.md`                                                                                                                                                                                                                                                                            |
+| root `package.json`                                                                                          |       | remove `packages/console/*`, `packages/stats/*`, `packages/slack` workspaces; `dev:desktop`, `dev:console`, `dev:stats`, `dev:storybook`, `sso`, `translate:app`, `random`, `prepare` scripts; `@aws-sdk/client-s3`, `heap-snapshot-toolkit`, `@actions/artifact`, `sst`, `husky` deps; Sentry, Electron and SolidStart catalog entries |
+| `turbo.json`                                                                                                 |       | drop task entries for removed packages                                                                                                                                                                                                                                                                                                  |
+| `bunfig.toml`                                                                                                |       | drop Electron entries from `minimumReleaseAgeExcludes`                                                                                                                                                                                                                                                                                  |
+| `patches/`                                                                                                   |       | drop patches whose consumer left the lockfile after `bun install`                                                                                                                                                                                                                                                                       |
 
 Kept on purpose: `SECURITY.md` (rewritten under plan `12` N6), `docs/specs/`, `docs/session-runtime.md` (design docs for the V2 core the AGENTS.md rules reference), `install` (plan `04` decides), `.gitleaksignore`, `.dockerignore`, `.oxlintrc.json`.
 
@@ -55,11 +55,11 @@ Git history is kept in full. Cherry-picking upstream fixes depends on the shared
 
 ## 5. Tier 2: the web UI stack (TUI-only decision)
 
-| Target | Files | Notes |
-|---|---|---|
-| `packages/app` | 643 | browser UI, embedded into the binary at build time |
-| `packages/ui` | 1,695 | shared web components. The TUI imports five mp3 files from `packages/ui/src/audio` and nothing else |
-| `packages/session-ui`, `client`, `httpapi-codegen` | 155 | consumed only by `app`, `desktop`, `sdk-next` |
+| Target                                             | Files | Notes                                                                                               |
+| -------------------------------------------------- | ----- | --------------------------------------------------------------------------------------------------- |
+| `packages/app`                                     | 643   | browser UI, embedded into the binary at build time                                                  |
+| `packages/ui`                                      | 1,695 | shared web components. The TUI imports five mp3 files from `packages/ui/src/audio` and nothing else |
+| `packages/session-ui`, `client`, `httpapi-codegen` | 155   | consumed only by `app`, `desktop`, `sdk-next`                                                       |
 
 Steps:
 
@@ -74,13 +74,13 @@ Keep `serve` and `attach`: small, loopback-bound, and they let a local editor or
 
 ## 6. Tier 3: inside the binary (owned by privacy regions, sizing only)
 
-| Subsystem | Lines | Region |
-|---|---|---|
-| `cli/cmd/github.handler.ts`, `pr.ts` | 1,750 | `08` |
-| `account/`, `share/`, `control-plane/` | 2,540 | `02`, `03`, `08` |
-| `core/src/github-copilot` and 11 built-in auth plugins | 4,500+ | `01`, `05` |
-| 32 V2 provider plugins in `core/src/plugin/provider` | | `01` |
-| `upgrade`, `uninstall`, `plug`, `stats` commands | 1,050 | `04`, `05` |
+| Subsystem                                              | Lines  | Region           |
+| ------------------------------------------------------ | ------ | ---------------- |
+| `cli/cmd/github.handler.ts`, `pr.ts`                   | 1,750  | `08`             |
+| `account/`, `share/`, `control-plane/`                 | 2,540  | `02`, `03`, `08` |
+| `core/src/github-copilot` and 11 built-in auth plugins | 4,500+ | `01`, `05`       |
+| 32 V2 provider plugins in `core/src/plugin/provider`   |        | `01`             |
+| `upgrade`, `uninstall`, `plug`, `stats` commands       | 1,050  | `04`, `05`       |
 
 `acp/` (Agent Client Protocol, 3,700 lines) is local stdio and useful for editor integration. Keep.
 
@@ -95,20 +95,20 @@ Tests: delete tests with the code they cover. Do not strip fixtures blindly; `te
 
 ## 8. Divergence log
 
-| Upstream file | Change | Reason |
-|---|---|---|
-| root `package.json`, `turbo.json`, `bunfig.toml` | workspace and script entries removed | packages deleted |
-| Tier 1 paths above | deleted | not part of the agent |
-| `packages/app`, `ui`, `session-ui`, `client`, `httpapi-codegen` | deleted | web UI stack; Hermit is TUI-only |
-| `packages/tui/src/attention.ts`, `audio.d.ts`, `src/assets/audio/*.mp3` | five sound files moved from `packages/ui` | remove the `@opencode-ai/ui` dependency |
-| `packages/opencode/src/cli/cmd/web.ts`, `src/index.ts` | `web` command deleted | no web UI |
-| `packages/opencode/script/build.ts` | embedded web UI bundle step removed | no web UI |
-| `packages/opencode/src/server/shared/ui.ts`, `routes/instance/httpapi/server.ts` | UI catch-all route and `app.opencode.ai` proxy deleted | closes plan `08` S2 |
-| `packages/opencode/src/effect/runtime-flags.ts` | `OPENCODE_DISABLE_EMBEDDED_WEB_UI` removed | no embedded UI to disable |
-| `packages/opencode/test/server/httpapi-listen.test.ts` | `/status` changed to `/doc` | no `/status` route exists; upstream's test passed only because the UI catch-all proxied the request to `app.opencode.ai` and returned that SPA's 200 |
-| `packages/opencode/test/server/httpapi-ui.test.ts` | deleted | tested the removed UI route |
-| `patches/` | `@dnd-kit/dom`, `@tanstack/virtual-core`, `@pierre/trees`, `@standard-community/standard-openapi`, `install-korean-ime-fix.sh` removed | consumers left the lockfile |
-| root `package.json` | 31 unused catalog entries, `dev:web` removed | no consumers |
+| Upstream file                                                                    | Change                                                                                                                                 | Reason                                                                                                                                               |
+| -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| root `package.json`, `turbo.json`, `bunfig.toml`                                 | workspace and script entries removed                                                                                                   | packages deleted                                                                                                                                     |
+| Tier 1 paths above                                                               | deleted                                                                                                                                | not part of the agent                                                                                                                                |
+| `packages/app`, `ui`, `session-ui`, `client`, `httpapi-codegen`                  | deleted                                                                                                                                | web UI stack; Hermit is TUI-only                                                                                                                     |
+| `packages/tui/src/attention.ts`, `audio.d.ts`, `src/assets/audio/*.mp3`          | five sound files moved from `packages/ui`                                                                                              | remove the `@opencode-ai/ui` dependency                                                                                                              |
+| `packages/opencode/src/cli/cmd/web.ts`, `src/index.ts`                           | `web` command deleted                                                                                                                  | no web UI                                                                                                                                            |
+| `packages/opencode/script/build.ts`                                              | embedded web UI bundle step removed                                                                                                    | no web UI                                                                                                                                            |
+| `packages/opencode/src/server/shared/ui.ts`, `routes/instance/httpapi/server.ts` | UI catch-all route and `app.opencode.ai` proxy deleted                                                                                 | closes plan `08` S2                                                                                                                                  |
+| `packages/opencode/src/effect/runtime-flags.ts`                                  | `OPENCODE_DISABLE_EMBEDDED_WEB_UI` removed                                                                                             | no embedded UI to disable                                                                                                                            |
+| `packages/opencode/test/server/httpapi-listen.test.ts`                           | `/status` changed to `/doc`                                                                                                            | no `/status` route exists; upstream's test passed only because the UI catch-all proxied the request to `app.opencode.ai` and returned that SPA's 200 |
+| `packages/opencode/test/server/httpapi-ui.test.ts`                               | deleted                                                                                                                                | tested the removed UI route                                                                                                                          |
+| `patches/`                                                                       | `@dnd-kit/dom`, `@tanstack/virtual-core`, `@pierre/trees`, `@standard-community/standard-openapi`, `install-korean-ime-fix.sh` removed | consumers left the lockfile                                                                                                                          |
+| root `package.json`                                                              | 31 unused catalog entries, `dev:web` removed                                                                                           | no consumers                                                                                                                                         |
 
 ## 9. Cross-region notes
 
@@ -119,18 +119,18 @@ Tests: delete tests with the code they cover. Do not strip fixtures blindly; `te
 
 `patches/` holds upstream fixes applied on top of third-party packages. Removing one silently reintroduces the bug it fixes, so each is classified rather than deleted wholesale.
 
-| Patch | What it does | Decision |
-|---|---|---|
+| Patch                                                                                                    | What it does                                                                                   | Decision                                                                                                     |
+| -------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
 | `@ai-sdk/anthropic`, `amazon-bedrock`, `google`, `groq`, `mistral`, `openai`, `openai-compatible`, `xai` | provider option types, reasoning effort, cache keys, empty-message handling, error passthrough | keep; model reliability is priority 2 in `docs/fork.md`. Drop a patch only when plan `01` drops its provider |
-| `@modelcontextprotocol/sdk` | `callTool` typing and compat schema | keep |
-| `effect` | SSE JSON schema in the HTTP API | keep |
-| `@silvia-odwyer/photon-node` | wasm binding init fix for image handling | keep |
-| `@standard-community/standard-openapi` | remote `$ref` handling in OpenAPI generation | keep while `opencode generate` exists |
-| `gcp-metadata` | silence AggregateError outside GCP | drop with `google-vertex` in plan `01` if that provider goes |
-| `@npmcli/agent`, `pacote` | proxy and git-tarball fallback for runtime npm installs | drop with plan `05` if runtime npm installs are removed |
-| `solid-js` | transition value fix, upstream issue 2046 | keep; the TUI runs on Solid |
-| `@dnd-kit/dom`, `@tanstack/virtual-core`, `@pierre/trees` | web UI drag, virtual list, file tree | drop with Tier 2 |
-| `install-korean-ime-fix.sh` | user-side shell script that patches an installed binary | delete; not a dependency patch. Check whether the fix is already in `tui` |
+| `@modelcontextprotocol/sdk`                                                                              | `callTool` typing and compat schema                                                            | keep                                                                                                         |
+| `effect`                                                                                                 | SSE JSON schema in the HTTP API                                                                | keep                                                                                                         |
+| `@silvia-odwyer/photon-node`                                                                             | wasm binding init fix for image handling                                                       | keep                                                                                                         |
+| `@standard-community/standard-openapi`                                                                   | remote `$ref` handling in OpenAPI generation                                                   | keep while `opencode generate` exists                                                                        |
+| `gcp-metadata`                                                                                           | silence AggregateError outside GCP                                                             | drop with `google-vertex` in plan `01` if that provider goes                                                 |
+| `@npmcli/agent`, `pacote`                                                                                | proxy and git-tarball fallback for runtime npm installs                                        | drop with plan `05` if runtime npm installs are removed                                                      |
+| `solid-js`                                                                                               | transition value fix, upstream issue 2046                                                      | keep; the TUI runs on Solid                                                                                  |
+| `@dnd-kit/dom`, `@tanstack/virtual-core`, `@pierre/trees`                                                | web UI drag, virtual list, file tree                                                           | drop with Tier 2                                                                                             |
+| `install-korean-ime-fix.sh`                                                                              | user-side shell script that patches an installed binary                                        | delete; not a dependency patch. Check whether the fix is already in `tui`                                    |
 
 ## 11. Docs layout
 
@@ -140,11 +140,25 @@ Durable documents moved to `docs/`: `privacy-model.md`, `fork.md`, `upstream.md`
 
 Captured with the scratchpad `metrics.sh` before and after each tier, for the before-and-after comparison.
 
-| Metric | Baseline | After Tier 1 | After Tier 2 |
-|---|---|---|---|
-| Tracked files | 6,631 | 4,608 | 2,114 |
-| Source lines (ts/tsx, excluding tests and generated) | 473,440 | 386,096 | 174,509 |
-| Workspace packages | 36 | 19 | 14 |
-| Direct dependencies (unique across all package.json) | 270 | 188 | 136 |
-| Locked packages in `bun.lock` | 3,248 | 1,407 | 1,142 |
-| Tracked tree size | 143 MB | 58 MB | 32 MB |
+| Metric                                               | Baseline | After Tier 1 | After Tier 2 |
+| ---------------------------------------------------- | -------- | ------------ | ------------ |
+| Tracked files                                        | 6,631    | 4,608        | 2,114        |
+| Source lines (ts/tsx, excluding tests and generated) | 473,440  | 386,096      | 174,509      |
+| Workspace packages                                   | 36       | 19           | 14           |
+| Direct dependencies (unique across all package.json) | 270      | 188          | 136          |
+| Locked packages in `bun.lock`                        | 3,248    | 1,407        | 1,142        |
+| Tracked tree size                                    | 143 MB   | 58 MB        | 32 MB        |
+
+## 13. Visualization for the announcement
+
+Reference: `.plan/reference/disktree-treemap.png`, a screenshot of Tobi Lütke's disktree. Its hatched "reclaimable" convention is the model.
+
+Plan: one treemap of the repository at the fork point `adee738d1e`, tiled at package depth and sized by source lines rather than bytes (bytes are dominated by marketing video, which is not a code argument). The 14 surviving packages render in solid color grouped by role (agent core, TUI, local API, storage, tooling). Everything deleted renders hatched, grouped by why it left: hosted services, web and desktop UI, marketing, release automation. A sidebar carries the before-and-after counts from section 12 and, once plans `01`-`05` land, network destinations on first launch. Baseline sizes come from `git ls-tree -r adee738d1e` so the chart is reproducible.
+
+Published at `docs/strip-treemap.html` with the static render `docs/strip-treemap.png`. Regenerate the PNG with:
+
+```
+"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --hide-scrollbars --force-device-scale-factor=2 --window-size=1600,900 --virtual-time-budget=6000 --screenshot=docs/strip-treemap.png "file://$PWD/docs/strip-treemap.html?export"
+```
+
+Self-contained page. Diff vocabulary: hatched red (`#cb7676`, the Vitesse Dark diff color) for removed, neutral greys for kept, green (`#4d9375`) reserved for the `added` group. Nothing is green yet. When plans `10` and `11` land, measure the new Hermit-only directories (trust classification, no-fallback guard, TUI trust indicator, verification harness) from the Hermit tree and add them as `added` rows. Kept packages stay grey because they are unchanged context, not additions.
