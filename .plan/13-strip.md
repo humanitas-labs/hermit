@@ -1,6 +1,6 @@
 # 13 Strip the Repository
 
-**Status:** in progress (Tier 1 landed; Tier 2 not started)
+**Status:** done (Tier 1 and Tier 2 landed; Tier 3 is owned by the privacy regions)
 
 ## 1. Goal
 
@@ -99,11 +99,21 @@ Tests: delete tests with the code they cover. Do not strip fixtures blindly; `te
 |---|---|---|
 | root `package.json`, `turbo.json`, `bunfig.toml` | workspace and script entries removed | packages deleted |
 | Tier 1 paths above | deleted | not part of the agent |
+| `packages/app`, `ui`, `session-ui`, `client`, `httpapi-codegen` | deleted | web UI stack; Hermit is TUI-only |
+| `packages/tui/src/attention.ts`, `audio.d.ts`, `src/assets/audio/*.mp3` | five sound files moved from `packages/ui` | remove the `@opencode-ai/ui` dependency |
+| `packages/opencode/src/cli/cmd/web.ts`, `src/index.ts` | `web` command deleted | no web UI |
+| `packages/opencode/script/build.ts` | embedded web UI bundle step removed | no web UI |
+| `packages/opencode/src/server/shared/ui.ts`, `routes/instance/httpapi/server.ts` | UI catch-all route and `app.opencode.ai` proxy deleted | closes plan `08` S2 |
+| `packages/opencode/src/effect/runtime-flags.ts` | `OPENCODE_DISABLE_EMBEDDED_WEB_UI` removed | no embedded UI to disable |
+| `packages/opencode/test/server/httpapi-listen.test.ts` | `/status` changed to `/doc` | no `/status` route exists; upstream's test passed only because the UI catch-all proxied the request to `app.opencode.ai` and returned that SPA's 200 |
+| `packages/opencode/test/server/httpapi-ui.test.ts` | deleted | tested the removed UI route |
+| `patches/` | `@dnd-kit/dom`, `@tanstack/virtual-core`, `@pierre/trees`, `@standard-community/standard-openapi`, `install-korean-ime-fix.sh` removed | consumers left the lockfile |
+| root `package.json` | 31 unused catalog entries, `dev:web` removed | no consumers |
 
 ## 9. Cross-region notes
 
 - Plan `12` N5: superseded by this file. Plan `12` keeps N6 (`SECURITY.md`, `LICENSE` attribution).
-- Plan `08`: the `app.opencode.ai` proxy removal lands with Tier 2 here if Tier 2 runs first.
+- Plan `08`: the `app.opencode.ai` proxy (S2) and the embedded UI flag were removed by Tier 2. Strike them there.
 
 ## 10. Patches triage
 
@@ -130,11 +140,11 @@ Durable documents moved to `docs/`: `privacy-model.md`, `fork.md`, `upstream.md`
 
 Captured with the scratchpad `metrics.sh` before and after each tier, for the before-and-after comparison.
 
-| Metric | Baseline | After Tier 1 |
-|---|---|---|
-| Tracked files | 6,631 | 4,608 |
-| Source lines (ts/tsx, excluding tests and generated) | 473,440 | 386,096 |
-| Workspace packages | 36 | 19 |
-| Direct dependencies (unique across all package.json) | 270 | 188 |
-| Locked packages in `bun.lock` | 3,248 | 1,407 |
-| Tracked tree size | 143 MB | 58 MB |
+| Metric | Baseline | After Tier 1 | After Tier 2 |
+|---|---|---|---|
+| Tracked files | 6,631 | 4,608 | 2,114 |
+| Source lines (ts/tsx, excluding tests and generated) | 473,440 | 386,096 | 174,509 |
+| Workspace packages | 36 | 19 | 14 |
+| Direct dependencies (unique across all package.json) | 270 | 188 | 136 |
+| Locked packages in `bun.lock` | 3,248 | 1,407 | 1,142 |
+| Tracked tree size | 143 MB | 58 MB | 32 MB |
