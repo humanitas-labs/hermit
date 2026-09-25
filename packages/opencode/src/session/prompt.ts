@@ -1274,7 +1274,6 @@ const layer = Layer.effect(
               agent,
               permission: session.permission,
               sessionID,
-              parentSessionID: session.parentID,
               system,
               messages: [
                 ...modelMsgs,

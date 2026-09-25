@@ -1,5 +1,4 @@
 import { LayerNode } from "@opencode-ai/core/effect/layer-node"
-import os from "os"
 import { ConfigV1 } from "@opencode-ai/core/v1/config/config"
 import fuzzysort from "fuzzysort"
 import { Config } from "@/config/config"
@@ -13,7 +12,6 @@ import { type LanguageModelV3 } from "@ai-sdk/provider"
 import { ModelsDev } from "@opencode-ai/core/models-dev"
 import { Auth } from "../auth"
 import { Env } from "../env"
-import { InstallationVersion } from "@opencode-ai/core/installation/version"
 import { iife } from "@/util/iife"
 import { Global } from "@opencode-ai/core/global"
 import path from "path"
@@ -183,29 +181,6 @@ function custom(dep: CustomDep): Record<string, CustomLoader> {
           },
         },
       }),
-    opencode: Effect.fnUntraced(function* (input: Info) {
-      const env = yield* dep.env()
-      const hasKey = iife(() => {
-        if (input.env.some((item) => env[item])) return true
-        return false
-      })
-      const ok =
-        hasKey ||
-        Boolean(yield* dep.auth(input.id)) ||
-        Boolean((yield* dep.config()).provider?.["opencode"]?.options?.apiKey)
-
-      if (!ok) {
-        for (const [key, value] of Object.entries(input.models)) {
-          if (value.cost.input === 0) continue
-          delete input.models[key]
-        }
-      }
-
-      return {
-        autoload: Object.keys(input.models).length > 0,
-        options: ok ? {} : { apiKey: "public" },
-      }
-    }),
     openai: () =>
       Effect.succeed({
         autoload: false,
@@ -465,47 +440,10 @@ function custom(dep: CustomDep): Record<string, CustomLoader> {
         },
       }
     }),
-    llmgateway: () =>
-      Effect.succeed({
-        autoload: false,
-        options: {
-          headers: {
-            "HTTP-Referer": "https://opencode.ai/",
-            "X-Title": "opencode",
-            "X-Source": "opencode",
-          },
-        },
-      }),
-    openrouter: () =>
-      Effect.succeed({
-        autoload: false,
-        options: {
-          headers: {
-            "HTTP-Referer": "https://opencode.ai/",
-            "X-Title": "opencode",
-          },
-        },
-      }),
     nvidia: (provider) =>
       Effect.succeed({
         autoload: provider.source === "config",
-        options: {
-          headers: {
-            "HTTP-Referer": "https://opencode.ai/",
-            "X-Title": "opencode",
-            "X-BILLING-INVOKE-ORIGIN": "OpenCode",
-          },
-        },
-      }),
-    vercel: () =>
-      Effect.succeed({
-        autoload: false,
-        options: {
-          headers: {
-            "http-referer": "https://opencode.ai/",
-            "x-title": "opencode",
-          },
-        },
+        options: {},
       }),
     "google-vertex": Effect.fnUntraced(function* (provider: Info) {
       const env = yield* dep.env()
@@ -602,16 +540,6 @@ function custom(dep: CustomDep): Record<string, CustomLoader> {
         },
       }
     }),
-    zenmux: () =>
-      Effect.succeed({
-        autoload: false,
-        options: {
-          headers: {
-            "HTTP-Referer": "https://opencode.ai/",
-            "X-Title": "opencode",
-          },
-        },
-      }),
     gitlab: Effect.fnUntraced(function* (input: Info) {
       const {
         VERSION: GITLAB_PROVIDER_VERSION,
@@ -629,7 +557,6 @@ function custom(dep: CustomDep): Record<string, CustomLoader> {
       const directory = yield* InstanceState.directory
 
       const aiGatewayHeaders = {
-        "User-Agent": `opencode/${InstallationVersion} gitlab-ai-provider/${GITLAB_PROVIDER_VERSION} (${os.platform()} ${os.release()}; ${os.arch()})`,
         "anthropic-beta": "context-1m-2025-08-07",
         ...providerConfig?.options?.aiGatewayHeaders,
       }
@@ -761,9 +688,6 @@ function custom(dep: CustomDep): Record<string, CustomLoader> {
         autoload: !!apiKey,
         options: {
           apiKey,
-          headers: {
-            "User-Agent": `opencode/${InstallationVersion} cloudflare-workers-ai (${os.platform()} ${os.release()}; ${os.arch()})`,
-          },
         },
         async getModel(sdk: any, modelID: string) {
           return sdk.languageModel(modelID)
@@ -831,9 +755,6 @@ function custom(dep: CustomDep): Record<string, CustomLoader> {
         cacheKey: input.options?.cacheKey,
         skipCache: input.options?.skipCache,
         collectLog: input.options?.collectLog,
-        headers: {
-          "User-Agent": `opencode/${InstallationVersion} cloudflare-ai-gateway (${os.platform()} ${os.release()}; ${os.arch()})`,
-        },
       }
 
       const aigateway = createAiGateway({
@@ -883,25 +804,6 @@ function custom(dep: CustomDep): Record<string, CustomLoader> {
         options: {},
       }
     }),
-    cerebras: () =>
-      Effect.succeed({
-        autoload: false,
-        options: {
-          headers: {
-            "X-Cerebras-3rd-Party-Integration": "opencode",
-          },
-        },
-      }),
-    kilo: () =>
-      Effect.succeed({
-        autoload: false,
-        options: {
-          headers: {
-            "HTTP-Referer": "https://opencode.ai/",
-            "X-Title": "opencode",
-          },
-        },
-      }),
     "snowflake-cortex": Effect.fnUntraced(function* (input: Info) {
       const env = yield* dep.env()
       const auth = yield* dep.auth(input.id)
@@ -2002,11 +1904,9 @@ const layer = Layer.effect(
         return undefined
       }
 
-      const priority = providerID.startsWith("opencode")
-        ? ["gpt-nano"]
-        : providerID.startsWith("github-copilot")
-          ? ["gpt-mini", ...smallModelFamilyPriority]
-          : smallModelFamilyPriority
+      const priority = providerID.startsWith("github-copilot")
+        ? ["gpt-mini", ...smallModelFamilyPriority]
+        : smallModelFamilyPriority
       const models = sortBy(
         Object.values(provider.models),
         [(model) => model.release_date, "desc"],

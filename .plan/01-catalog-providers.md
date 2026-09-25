@@ -1,6 +1,6 @@
 # 01 Catalog and Providers
 
-**Status:** not started (revised for explicit egress)
+**Status:** done (branch `catalog-telemetry`)
 
 ## 1. Goal
 
@@ -19,12 +19,13 @@ The provider list is built from the embedded snapshot plus user config only. No 
 - `packages/opencode/src/session/retry.ts` (Zen upsell strings :11,132)
 - `packages/tui/src/component/dialog-provider.tsx` (Zen upsell :378,389)
 - `packages/tui/src/component/dialog-retry-action.tsx` (`opencode.ai/go` link)
+- Also touched while landing: `packages/core/src/session/runner/llm.ts` (V2 native headers), `packages/core/src/plugin/provider/{kilo,nvidia,zenmux,llmgateway}.ts` (deleted), `packages/core/src/plugin/provider/{openrouter,vercel,cerebras,gitlab,cloudflare-*}.ts`, `packages/opencode/src/cli/cmd/models.ts` (`--refresh`), `packages/opencode/script/models.json` (checked-in snapshot), `packages/tui/src/routes/session/index.tsx` and `packages/tui/src/component/bg-pulse.tsx` (Go upsell trigger and its effect), `packages/tui/src/feature-plugins/home/tips-view.tsx` (Zen tip).
 
 ## 3. Changes
 
 | Id | Change | Where | Notes |
 |---|---|---|---|
-| C1 | Delete `fetchApi`, `fetchAndWrite`, `refresh` scheduler, and the `HttpClient` dependency. `populate` becomes: disk file from `OPENCODE_MODELS_PATH` if set, else snapshot. Keep `refresh` as a no-op or remove from `Interface` and fix callers. | `core/src/models-dev.ts:160-258` | Keep `Service` shape so `provider.ts` and `plugin/models-dev.ts` compile. Remove `Flag.OPENCODE_MODELS_URL` and `OPENCODE_DISABLE_MODELS_FETCH` once unused. |
+| C1 | Keep the runtime catalog fetch (`fetchApi`, on-disk cache, `refresh`, `OPENCODE_MODELS_URL`, `OPENCODE_DISABLE_MODELS_FETCH`). Log one `Effect.logInfo("model catalog refresh", { url })` before each fetch, send `User-Agent: hermit/<version>`, and filter `opencode*` providers out of every catalog source. Background refresh runs once per process start. | `core/src/models-dev.ts` | User decision: the catalog carries no user context, and freezing it costs stale model metadata for little privacy gain. The fetch is a documented startup destination (see section 8). |
 | C2 | Build-time snapshot: keep fetching `models.dev/api.json` at build, but filter out `opencode` and `opencode-go` before embedding. | `script/generate.ts:10-13` | The build machine needs network; the binary does not. Commit a checked-in `models.json` fallback so builds are reproducible offline. |
 | C3 | Delete the `opencode` custom loader and `apiKey: "public"` autoload. | `provider/provider.ts:185-207` | Also drop the `opencode` branches at `provider.ts:1971` (small model priority) and `catalog.ts:207-210`. |
 | C4 | Delete V2 `OpencodePlugin` and remove from `ProviderPlugins`. | `core/src/plugin/provider/opencode.ts`, `core/src/plugin/provider.ts:24,~60` | Coordinate with `02` which deletes the integration it registers. |
@@ -55,8 +56,32 @@ A later trim to a curated list remains possible if binary size or dependency cou
 
 | Upstream file | Change | Reason |
 |---|---|---|
+| `packages/core/src/models-dev.ts` | Catalog User-Agent is `hermit/<version>` (no channel or client). One `Effect.logInfo("model catalog refresh", { url })` before each fetch. `populate` drops providers whose id starts with `opencode` from disk, snapshot, and fetched data. The background refresh forks once at startup instead of repeating every 60 minutes. Fetch, cache, `refresh`, and flags are otherwise upstream. | C1. Upstream's hourly repeat runs more than once per process start; once per start is the smallest change that keeps startup behavior. |
+| `packages/opencode/script/generate.ts`, `packages/opencode/script/models.json` | Build fetches `models.dev/api.json`, falls back to the checked-in `script/models.json` when offline, and drops every provider id starting with `opencode` before embedding. | C2. |
+| `packages/opencode/src/cli/cmd/models.ts` | Removed the `opencode`-first sort. | C3. |
+| `packages/opencode/src/cli/cmd/providers.ts` | Removed the `opencode` priority and "recommended" hint, and the `opencode.ai/auth` message. | C3/C8. |
+| `packages/opencode/src/provider/provider.ts` | Deleted the `opencode` custom loader (`apiKey: "public"` autoload), the `opencode` small-model priority, and the `HTTP-Referer`/`X-Title`/`X-Source`/`X-BILLING-INVOKE-ORIGIN`/`X-Cerebras-3rd-Party-Integration` headers and OS-identifying User-Agents in the `llmgateway`, `openrouter`, `nvidia`, `vercel`, `zenmux`, `gitlab`, `cloudflare-*`, `cerebras`, and `kilo` loaders. Loaders that only set headers were removed; `nvidia` keeps its `autoload` rule with empty options. | C3/C7. The Hermit `getSmallModel` cross-provider guard is untouched. |
+| `packages/core/src/plugin/provider/opencode.ts` (deleted), `packages/core/src/plugin/provider.ts` | Removed `OpencodePlugin` from `ProviderPlugins`. | C4. |
+| `packages/core/src/plugin/provider/{kilo,nvidia,zenmux,llmgateway}.ts` (deleted) | These plugins only injected attribution headers. | C7; prefer deleting a code path. |
+| `packages/core/src/plugin/provider/{openrouter,vercel,cerebras}.ts` | Removed the catalog transforms that injected attribution headers. | C7. |
+| `packages/core/src/plugin/provider/{gitlab,cloudflare-workers-ai,cloudflare-ai-gateway}.ts` | Removed the `opencode/<v> ... (<platform> <release>; <arch>)` User-Agent. | C7. Bun's `--user-agent=hermit/<version>` covers the default UA. |
+| `packages/core/src/catalog.ts` | Removed the `opencode` `gpt-5-nano` small-model special case. | C3. |
+| `packages/opencode/src/session/llm/request.ts` | Headers are now `User-Agent: hermit/<version>` plus model/provider headers. Removed `x-session-affinity`, `X-Session-Id`, `x-parent-session-id`, and the `x-opencode-*` branch; dropped the unused `parentSessionID` input (also from `session/llm.ts` and `session/prompt.ts`). | C6. Fireworks and llama.cpp do not need sticky-routing headers; a gateway that does can add them via `provider.<id>.options.headers`. |
+| `packages/core/src/session/runner/llm.ts` | Same header removal on the V2 native runner. | C6 applies to every inference seam. |
+| `packages/opencode/src/session/retry.ts` | Removed `GO_UPSELL_*`, the `FreeUsageLimitError` and `GoUsageLimitError` branches, and their helpers. `retryable` keeps its `Retryable | undefined` signature. | C8. |
+| `packages/tui/src/component/dialog-provider.tsx` | Removed the Zen and Go API-key descriptions. | C8. |
+| `packages/tui/src/component/dialog-retry-action.tsx`, `bg-pulse.tsx` (deleted), `packages/tui/src/routes/session/index.tsx` | Removed the Go upsell dialog and its `session.status` trigger. | C8; nothing produces a retry `action` any more. |
+| `packages/tui/src/feature-plugins/home/tips-view.tsx` | Removed the "connect with OpenCode Zen" tip. | C8. |
+| `packages/opencode/src/plugin/openai/codex.ts` | Codex OAuth `User-Agent` is `opencode/<version>` without OS release/arch. `originator` and `session-id` stay: the ChatGPT backend and the websocket pool key on them. | C7 goal (no OS fingerprint); recorded here because `09` T4 requires `os.release()` to be absent. |
+| Tests | Deleted `core/test/plugin/provider-{opencode,kilo,nvidia,zenmux,llmgateway}.test.ts`, the zen native cassette and scenario, the Go upsell retry tests, the header assertions in `core/test/session-runner.test.ts`, `opencode/test/session/llm.test.ts`, `opencode/test/provider/provider.test.ts`, and the core provider plugin tests. `core/test/models.test.ts` asserts the `hermit/<version>` catalog User-Agent. | Tests deleted with the code they covered. |
 
 ## 8. Cross-region notes
 
-- `02` deletes the `opencode` integration; C4 must land in the same PR or after.
-- `10` wraps the fetch built in `resolveSDK`.
+- `02` deletes the `opencode` integration; C4 landed here (the plugin file is gone), so `02` only needs to drop the integration registration and console account code.
+- `10` wraps the fetch built in `resolveSDK`; untouched.
+- `11`: `https://models.dev/api.json` (or `OPENCODE_MODELS_URL`) is a documented startup destination. It is a `GET` with no user context (`User-Agent: hermit/<version>` only) and belongs on the harness application-egress allowlist; `OPENCODE_DISABLE_MODELS_FETCH=1` suppresses it for scenarios that need a silent process.
+- C5 (drop any provider id starting with `opencode` after the allowlist loop) was not implemented as a provider-registry rule. The filter lives in `ModelsDev.populate` as a data filter on every catalog source (C1), and together with the snapshot filter (C2), the deleted loader (C3), and the deleted plugin (C4) it removes every OpenCode-hosted entry; `packages/opencode/src/hermit/AGENTS.md` forbids classifying by provider id; the boundary classifies the resolved URL per request, so a user-defined provider named `opencode` pointing at loopback must keep working. Tests also use `opencode` as a generic provider id.
+- `packages/schema/src/models-dev.ts` still defines `ModelsDev.Event.Refreshed` and `packages/schema/src/provider.ts` still exports `ProviderV2.ID.opencode`. Both are inert; removing them needs an SDK regeneration and a `packages/schema` edit that no plan owns.
+- Remaining `opencode.ai` hosts in source belong to other regions: `cli/cmd/account.ts` (`02`), `installation/index.ts` install URL (`04`), `cli/cmd/github.handler.ts` (`08`), the `/share` tip in `tips-view.tsx` (`03`), the `$schema` URLs (`12`), `mcp/oauth-provider.ts` `client_uri` (OAuth client metadata, `12`).
+- `webfetch` and `websearch` tool User-Agents are owned by `06`. The OAuth login User-Agents in `core/src/plugin/provider/openai.ts` and the auth plugins are plain `opencode/<version>` strings and become `hermit/<version>` under `12`.
+- Internal `x-opencode-*` and `x-session-affinity` headers in `server/` and `plugin/openai/ws-pool.ts` are loopback-only server routing keys, not provider headers.

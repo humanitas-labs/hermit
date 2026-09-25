@@ -20,40 +20,6 @@ const addPlugin = Effect.fn(function* () {
 })
 
 describe("VercelPlugin", () => {
-  it.effect("applies legacy lower-case referer headers", () =>
-    Effect.gen(function* () {
-      const catalog = yield* Catalog.Service
-      yield* catalog.transform((catalog) => {
-        catalog.provider.update(ProviderV2.ID.make("vercel"), (provider) => {
-          provider.api = { type: "aisdk", package: "@ai-sdk/vercel" }
-          provider.request.headers.Existing = "1"
-        })
-      })
-      yield* addPlugin()
-      expect((yield* catalog.provider.get(ProviderV2.ID.make("vercel")))?.request.headers).toEqual({
-        Existing: "1",
-        "http-referer": "https://opencode.ai/",
-        "x-title": "opencode",
-      })
-    }),
-  )
-
-  it.effect("does not add legacy upper-case referer headers", () =>
-    Effect.gen(function* () {
-      const catalog = yield* Catalog.Service
-      yield* catalog.transform((catalog) =>
-        catalog.provider.update(ProviderV2.ID.make("vercel"), (provider) => {
-          provider.api = { type: "aisdk", package: "@ai-sdk/vercel" }
-        }),
-      )
-      yield* addPlugin()
-      expect((yield* catalog.provider.get(ProviderV2.ID.make("vercel")))?.request.headers).not.toHaveProperty(
-        "HTTP-Referer",
-      )
-      expect((yield* catalog.provider.get(ProviderV2.ID.make("vercel")))?.request.headers).not.toHaveProperty("X-Title")
-    }),
-  )
-
   it.effect("creates @ai-sdk/vercel SDKs for custom provider IDs", () =>
     Effect.gen(function* () {
       const plugin = yield* PluginV2.Service
