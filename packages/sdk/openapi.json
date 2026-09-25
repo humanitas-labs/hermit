@@ -865,231 +865,6 @@
         ]
       }
     },
-    "/experimental/console": {
-      "get": {
-        "tags": ["experimental"],
-        "operationId": "experimental.console.get",
-        "parameters": [
-          {
-            "name": "directory",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            },
-            "required": false
-          },
-          {
-            "name": "workspace",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            },
-            "required": false
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Active Console provider metadata",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ConsoleState"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BadRequestError"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "InternalServerError",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/effect_HttpApiError_InternalServerError"
-                }
-              }
-            }
-          }
-        },
-        "description": "Get the active Console org name and the set of provider IDs managed by that Console org.",
-        "summary": "Get active Console provider metadata",
-        "x-codeSamples": [
-          {
-            "lang": "js",
-            "source": "import { createOpencodeClient } from \"@opencode-ai/sdk\n\nconst client = createOpencodeClient()\nawait client.experimental.console.get({\n  ...\n})"
-          }
-        ]
-      }
-    },
-    "/experimental/console/orgs": {
-      "get": {
-        "tags": ["experimental"],
-        "operationId": "experimental.console.listOrgs",
-        "parameters": [
-          {
-            "name": "directory",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            },
-            "required": false
-          },
-          {
-            "name": "workspace",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            },
-            "required": false
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Switchable Console orgs",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "orgs": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "accountID": {
-                            "type": "string"
-                          },
-                          "accountEmail": {
-                            "type": "string"
-                          },
-                          "accountUrl": {
-                            "type": "string"
-                          },
-                          "orgID": {
-                            "type": "string"
-                          },
-                          "orgName": {
-                            "type": "string"
-                          },
-                          "active": {
-                            "type": "boolean"
-                          }
-                        },
-                        "required": ["accountID", "accountEmail", "accountUrl", "orgID", "orgName", "active"],
-                        "additionalProperties": false
-                      }
-                    }
-                  },
-                  "required": ["orgs"],
-                  "additionalProperties": false,
-                  "description": "Switchable Console orgs"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BadRequestError"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "InternalServerError",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/effect_HttpApiError_InternalServerError"
-                }
-              }
-            }
-          }
-        },
-        "description": "Get the available Console orgs across logged-in accounts, including the current active org.",
-        "summary": "List switchable Console orgs",
-        "x-codeSamples": [
-          {
-            "lang": "js",
-            "source": "import { createOpencodeClient } from \"@opencode-ai/sdk\n\nconst client = createOpencodeClient()\nawait client.experimental.console.listOrgs({\n  ...\n})"
-          }
-        ]
-      }
-    },
-    "/experimental/console/switch": {
-      "post": {
-        "tags": ["experimental"],
-        "operationId": "experimental.console.switchOrg",
-        "parameters": [
-          {
-            "name": "directory",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            },
-            "required": false
-          },
-          {
-            "name": "workspace",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            },
-            "required": false
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Switch success",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "boolean",
-                  "description": "Switch success"
-                }
-              }
-            }
-          }
-        },
-        "description": "Persist a new active Console account/org selection for the current local OpenCode state.",
-        "summary": "Switch active Console org",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "accountID": {
-                    "type": "string"
-                  },
-                  "orgID": {
-                    "type": "string"
-                  }
-                },
-                "required": ["accountID", "orgID"],
-                "additionalProperties": false
-              }
-            }
-          }
-        },
-        "x-codeSamples": [
-          {
-            "lang": "js",
-            "source": "import { createOpencodeClient } from \"@opencode-ai/sdk\n\nconst client = createOpencodeClient()\nawait client.experimental.console.switchOrg({\n  ...\n})"
-          }
-        ]
-      }
-    },
     "/experimental/tool": {
       "get": {
         "tags": ["experimental"],
@@ -15612,23 +15387,6 @@
         "required": ["type", "key"],
         "additionalProperties": false
       },
-      "WellKnownAuth": {
-        "type": "object",
-        "properties": {
-          "type": {
-            "type": "string",
-            "enum": ["wellknown"]
-          },
-          "key": {
-            "type": "string"
-          },
-          "token": {
-            "type": "string"
-          }
-        },
-        "required": ["type", "key", "token"],
-        "additionalProperties": false
-      },
       "Auth": {
         "anyOf": [
           {
@@ -15636,9 +15394,6 @@
           },
           {
             "$ref": "#/components/schemas/ApiAuth"
-          },
-          {
-            "$ref": "#/components/schemas/WellKnownAuth"
           }
         ]
       },
@@ -21878,37 +21633,6 @@
         "required": ["backgroundSubagents"],
         "additionalProperties": false
       },
-      "ConsoleState": {
-        "type": "object",
-        "properties": {
-          "consoleManagedProviders": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "activeOrgName": {
-            "type": "string"
-          },
-          "switchableOrgCount": {
-            "type": "integer",
-            "minimum": 0
-          }
-        },
-        "required": ["consoleManagedProviders", "switchableOrgCount"],
-        "additionalProperties": false
-      },
-      "effect_HttpApiError_InternalServerError": {
-        "type": "object",
-        "properties": {
-          "_tag": {
-            "type": "string",
-            "enum": ["InternalServerError"]
-          }
-        },
-        "required": ["_tag"],
-        "additionalProperties": false
-      },
       "ToolListItem": {
         "type": "object",
         "properties": {
@@ -23091,6 +22815,17 @@
             }
           }
         }
+      },
+      "effect_HttpApiError_InternalServerError": {
+        "type": "object",
+        "properties": {
+          "_tag": {
+            "type": "string",
+            "enum": ["InternalServerError"]
+          }
+        },
+        "required": ["_tag"],
+        "additionalProperties": false
       },
       "TextPartInput": {
         "type": "object",

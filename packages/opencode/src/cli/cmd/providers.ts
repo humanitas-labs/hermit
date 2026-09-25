@@ -13,9 +13,7 @@ import { Config } from "@/config/config"
 import { Global } from "@opencode-ai/core/global"
 import { Plugin } from "../../plugin"
 import type { Hooks } from "@opencode-ai/plugin"
-import { Process } from "@/util/process"
 import { errorMessage } from "@/util/error"
-import { text } from "node:stream/consumers"
 import { Effect, Option } from "effect"
 
 type PluginAuth = NonNullable<Hooks["auth"]>
@@ -297,16 +295,10 @@ export const ProvidersListCommand = effectCmd({
 })
 
 export const ProvidersLoginCommand = effectCmd({
-  command: "login [url]",
+  command: "login",
   describe: "log in to a provider",
-  // URL login skips instance bootstrap, which would load remote config with the stale token and crash before re-auth.
-  instance: (args) => !args.url,
   builder: (yargs: Argv) =>
     yargs
-      .positional("url", {
-        describe: "opencode auth provider",
-        type: "string",
-      })
       .option("provider", {
         alias: ["p"],
         describe: "provider id or name to log in to (skips provider selection)",
@@ -322,35 +314,6 @@ export const ProvidersLoginCommand = effectCmd({
 
     UI.empty()
     yield* Prompt.intro("Add credential")
-    if (args.url) {
-      const url = args.url.replace(/\/+$/, "")
-      const wellknown = (yield* cliTry(`Failed to load auth provider metadata from ${url}: `, () =>
-        fetch(`${url}/.well-known/opencode`).then((x) => x.json()),
-      )) as {
-        auth: { command: string[]; env: string }
-      }
-      yield* Prompt.log.info(`Running \`${wellknown.auth.command.join(" ")}\``)
-      const abort = new AbortController()
-      const proc = Process.spawn(wellknown.auth.command, { stdout: "pipe", stderr: "inherit", abort: abort.signal })
-      if (!proc.stdout) {
-        yield* Prompt.log.error("Failed")
-        yield* Prompt.outro("Done")
-        return
-      }
-      const [exit, token] = yield* cliTry("Failed to run auth provider command: ", () =>
-        Promise.all([proc.exited, text(proc.stdout!)]),
-      ).pipe(Effect.ensuring(Effect.sync(() => abort.abort())))
-      if (exit !== 0) {
-        yield* Prompt.log.error("Failed")
-        yield* Prompt.outro("Done")
-        return
-      }
-      yield* Effect.orDie(authSvc.set(url, { type: "wellknown", key: wellknown.auth.env, token: token.trim() }))
-      yield* Prompt.log.success("Logged into " + url)
-      yield* Prompt.outro("Done")
-      return
-    }
-
     const cfgSvc = yield* Config.Service
     const pluginSvc = yield* Plugin.Service
     const modelsDev = yield* ModelsDev.Service

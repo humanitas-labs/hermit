@@ -74,9 +74,6 @@ describe("plugin.xai", () => {
     test("returns no options unless stored auth is OAuth and exposes methods in order", async () => {
       const hooks = await XaiAuthPlugin({} as any)
       expect(await hooks.auth!.loader!(async () => ({ type: "api", key: "sk-test" }), {} as any)).toEqual({})
-      expect(
-        await hooks.auth!.loader!(async () => ({ type: "wellknown", key: "k", token: "t" }) as any, {} as any),
-      ).toEqual({})
       expect(hooks.auth!.methods.map((m) => [m.type, m.label])).toEqual([
         ["oauth", "SuperGrok Subscription"],
         ["api", "Manually enter API Key"],

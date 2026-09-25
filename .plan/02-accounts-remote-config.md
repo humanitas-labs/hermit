@@ -1,6 +1,6 @@
 # 02 Accounts and Remote Config
 
-**Status:** not started
+**Status:** done
 
 ## 1. Goal
 
@@ -45,7 +45,29 @@ No account concept exists. No config source is remote. The only credential store
 
 | Upstream file | Change | Reason |
 |---|---|---|
+| `packages/opencode/src/account/{account,repo,schema,url}.ts` | Deleted. | R1: no account concept. |
+| `packages/core/src/account.ts`, `packages/core/src/account/sql.ts` | Deleted. | R1: account schema and `account`, `account_state`, `control_account` tables. |
+| `packages/core/src/database/migration/20260925220304_drop_account_tables.ts`, `migration.gen.ts`, `schema.gen.ts`, `packages/core/schema.json` | New migration drops the three tables; fresh-install schema no longer creates them. Generated with `bun script/migration.ts --name drop_account_tables` from `packages/core`. | R1. |
+| `packages/opencode/src/cli/cmd/account.ts`, `packages/opencode/src/index.ts` | Command deleted and registration removed. | R1. |
+| `packages/opencode/src/storage/schema.ts` | Account table re-exports removed. | R1. |
+| `packages/opencode/src/config/config.ts` | Removed the well-known loop, `authEnv`, `fetchRemoteJson`, `substituteWellKnownRemoteConfig`, the console-config merge, `OPENCODE_CONSOLE_TOKEN` env write, `consoleState`, `getConsoleState`, and the `Auth`, `Account`, `Env`, `httpClient` dependencies. Global config is loaded through `getGlobal()` only. | R2, R3. |
+| `packages/opencode/src/effect/app-runtime.ts`, `packages/opencode/src/server/routes/instance/httpapi/server.ts` | `Account.node` removed from the layer graphs. | R1. |
+| `packages/core/src/v1/config/console-state.ts` | Deleted. | R2: console-managed provider tracking. |
+| `packages/opencode/src/server/routes/instance/httpapi/groups/experimental.ts`, `handlers/experimental.ts` | `experimental.console.get`, `experimental.console.listOrgs`, `experimental.console.switchOrg` routes and handlers removed. | R4. SDK and `packages/sdk/openapi.json` regenerated with `bun run generate`. |
+| `packages/opencode/src/server/routes/instance/httpapi/groups/global.ts` | Dropped the side-effect `import "@opencode-ai/core/account"`. | R1. |
+| `packages/opencode/src/auth/index.ts` | `WellKnown` auth record type removed; `Auth.Info` is `Oauth | Api`. `OPENCODE_AUTH_CONTENT` kept. | R3, R6. |
+| `packages/opencode/src/cli/cmd/providers.ts` | `providers login` no longer accepts a `<url>` positional; the well-known fetch and remote command execution are gone, along with the `instance` bootstrap skip. | R3. |
+| `packages/core/src/v1/config/config.ts` | `ConfigV1.WellKnown` response schema removed. | R3: only consumer was the well-known loop. |
+| `packages/core/src/v1/config/error.ts`, `packages/opencode/src/server/routes/instance/httpapi/middleware/error.ts`, `packages/opencode/src/cli/error.ts`, `packages/tui/src/util/error.ts` | `ConfigRemoteAuthError` definition, 400 mapping, and the "run `opencode auth login <url>`" formatters removed. | R3: nothing constructs the error once the remote fetch is gone. |
+| `packages/tui/src/app.tsx`, `packages/tui/src/context/sync.tsx`, `packages/tui/src/component/dialog-provider.tsx` | "Switch org" command, `console_state` store slice and fetch, and console-managed provider footer/guard removed. | R2, R4. |
+| `packages/tui/src/component/dialog-console-org.tsx`, `packages/tui/src/util/provider-origin.ts` | Deleted. | R4. |
+| `packages/opencode/src/share/share-next.ts` | Org branch of `request()` removed; only the legacy `enterprise.url` / `opncd.ai` path remains until `03` deletes the module. | Plan owns lines 206-222; needed so this commit typechecks. |
+| Tests | Deleted `test/account/*`, `test/cli/account.test.ts`, `test/fake/account.ts`; removed well-known, console, and account cases from `test/config/config.test.ts`, `test/auth/auth.test.ts`, `test/server/httpapi-experimental.test.ts`, `test/server/httpapi-error-middleware.test.ts`, `test/share/share-next.test.ts`, `test/cli/error.test.ts`, `test/plugin/xai.test.ts`, the `httpapi-exercise` scenario list, both `tui-sdk` fixtures, and `packages/tui/test/app-lifecycle.test.tsx` (now uses `ConfigFrontmatterError` as its fatal-startup sample). | Tests deleted with the code they cover. |
 
 ## 7. Cross-region notes
 
-- `03` depends on the org branch removal; do `02` first or together.
+- `03` depends on the org branch removal; done here so the commit typechecks. `share-next.ts` and its test still exist after this plan and are deleted by `03`.
+- `packages/core/src/integration.ts` lines 385-403 named in section 2 no longer contain an `opencode` OAuth refresh branch at `785fed388e`; the V2 integration service is generic and had nothing to remove. The `opencode` integration itself lives in `packages/core/src/plugin/provider/opencode.ts`, which `01` C4 deletes. It does not import anything removed here, so no stub was needed.
+- `packages/opencode/test/session/llm-native-recorded.test.ts` still references `console.opencode.ai` and `OPENCODE_CONSOLE_TOKEN` inside the recorded Zen provider fixture. That is `01` territory (Zen removal); left untouched.
+- `packages/opencode/src/cli/cmd/providers.ts:430` still prints "Create an api key at https://opencode.ai/auth" for the `opencode` provider; `01` owns that provider.
+- `packages/opencode/src/control-plane/workspace.ts` still forwards `OPENCODE_AUTH_CONTENT` to remote workspaces; kept per R6, and `08` owns remote-workspace plumbing.
