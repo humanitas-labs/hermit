@@ -33,23 +33,23 @@ Rules for every run:
 
 Scenarios:
 
-| Scenario | Config | Expect |
-|---|---|---|
-| S1 local session | one loopback provider, `preset: private` | inference requests only to `127.0.0.1:<port>`; no DNS queries; no other connections |
-| S2 local session with tools | S1 plus a scripted `webfetch` to a second loopback server | S1 plus exactly that fetch, attributed to the tool call in the session log |
-| S3 local model down | S1, server stopped mid-session | request fails; no other host contacted; session reports the error |
-| S4 third-party session | provider `baseURL` pointing at the fake server via an `/etc/hosts` alias for `api.fireworks.ai` and a trusted self-signed cert | inference requests only to that host; headers contain no session identifiers; TUI/`run` output shows `THIRD PARTY` |
-| S5 preset conflict | `preset: private` with a third-party provider enabled | startup error naming the provider |
-| S6 background quiet | start the TUI, idle 90 seconds, exit | no connections at all (catches update check, catalog refresh, bootstrap install regressions) |
-| S7 secondary calls | S1 plus a session long enough to trigger title generation, compaction, a subagent, and agent generation | every model call goes to the loopback endpoint |
-| S8 remote secondary override | S1 with `small_model` pointing at a third-party provider, and separately a plugin small-model hook returning one | the secondary call is rejected; primary session continues; no remote contact |
-| S9 project weakening | S1 with a project `opencode.json` that sets `preset: external`, adds a provider, or sets `owner: "user"` on a remote endpoint | project values ignored with a warning; no remote contact |
-| S10 false local | provider `baseURL` remote with `owner: "user"` and a config attempt to mark it local | classified `USER`, never `LOCAL`; rejected under `private` |
-| S11 endpoint drift | same provider ID, one model with a per-model `baseURL` to a second fake host | the per-model endpoint is classified and checked on its own |
-| S12 redirect | fake local server answers 307 to a second host | request fails; second host never contacted |
-| S13 idle credentials | S1 with a Fireworks key present in the isolated auth file | startup succeeds; Fireworks never contacted; model rejected only if selected |
-| S14 tooling downloads | open a TypeScript file with empty caches, once with `OPENCODE_DISABLE_LSP_DOWNLOAD` set and once without | no download when set; expected download logged when unset, no context markers in the request |
-| S15 every runtime | repeat S1 and S7 for each retained inference runtime and transport in `10` section 3.0 | same as S1/S7 |
+| Scenario                     | Config                                                                                                                         | Expect                                                                                                             |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
+| S1 local session             | one loopback provider, `preset: private`                                                                                       | inference requests only to `127.0.0.1:<port>`; no DNS queries; no other connections                                |
+| S2 local session with tools  | S1 plus a scripted `webfetch` to a second loopback server                                                                      | S1 plus exactly that fetch, attributed to the tool call in the session log                                         |
+| S3 local model down          | S1, server stopped mid-session                                                                                                 | request fails; no other host contacted; session reports the error                                                  |
+| S4 third-party session       | provider `baseURL` pointing at the fake server via an `/etc/hosts` alias for `api.fireworks.ai` and a trusted self-signed cert | inference requests only to that host; headers contain no session identifiers; TUI/`run` output shows `THIRD PARTY` |
+| S5 preset conflict           | `preset: private` with a third-party provider enabled                                                                          | startup error naming the provider                                                                                  |
+| S6 background quiet          | start the TUI, idle 90 seconds, exit                                                                                           | no connections at all (catches update check, catalog refresh, bootstrap install regressions)                       |
+| S7 secondary calls           | S1 plus a session long enough to trigger title generation, compaction, a subagent, and agent generation                        | every model call goes to the loopback endpoint                                                                     |
+| S8 remote secondary override | S1 with `small_model` pointing at a third-party provider, and separately a plugin small-model hook returning one               | the secondary call is rejected; primary session continues; no remote contact                                       |
+| S9 project weakening         | S1 with a project `opencode.json` that sets `preset: external`, adds a provider, or sets `owner: "user"` on a remote endpoint  | project values ignored with a warning; no remote contact                                                           |
+| S10 false local              | provider `baseURL` remote with `owner: "user"` and a config attempt to mark it local                                           | classified `USER`, never `LOCAL`; rejected under `private`                                                         |
+| S11 endpoint drift           | same provider ID, one model with a per-model `baseURL` to a second fake host                                                   | the per-model endpoint is classified and checked on its own                                                        |
+| S12 redirect                 | fake local server answers 307 to a second host                                                                                 | request fails; second host never contacted                                                                         |
+| S13 idle credentials         | S1 with a Fireworks key present in the isolated auth file                                                                      | startup succeeds; Fireworks never contacted; model rejected only if selected                                       |
+| S14 tooling downloads        | open a TypeScript file with empty caches, once with `OPENCODE_DISABLE_LSP_DOWNLOAD` set and once without                       | no download when set; expected download logged when unset, no context markers in the request                       |
+| S15 every runtime            | repeat S1 and S7 for each retained inference runtime and transport in `10` section 3.0                                         | same as S1/S7                                                                                                      |
 
 Assertions compare the recorded destination list, including attempts, to `allowlist.json` per scenario. Any unexpected destination or attempt fails the run and prints the destination and path.
 
@@ -60,4 +60,4 @@ For users who want the model-context guarantee enforced outside the application,
 ## 5. Divergence log
 
 | Upstream file | Change | Reason |
-|---|---|---|
+| ------------- | ------ | ------ |

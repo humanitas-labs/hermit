@@ -56,24 +56,24 @@ No upstream changes have been reviewed since the fork point. The next review sta
 #### Adopt
 
 | Upstream | Area | Reason | Hermit |
-|---|---|---|---|
+| -------- | ---- | ------ | ------ |
 
 #### Consider
 
 | Upstream | Area | Reason |
-|---|---|---|
+| -------- | ---- | ------ |
 
 #### Ignore
 
 | Upstream | Area | Reason |
-|---|---|---|
+| -------- | ---- | ------ |
 
 ## 4. Ported upstream changes
 
 This section provides a durable record of significant upstream work incorporated into Hermit.
 
 | Upstream | Hermit | Description | Notes |
-|---|---|---|---|
+| -------- | ------ | ----------- | ----- |
 
 ## 5. Review procedure
 

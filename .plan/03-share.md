@@ -23,11 +23,11 @@ No code path can transmit a session transcript. The `share` concept is removed f
 
 ## 3. Changes
 
-| Id | Change | Notes |
-|---|---|---|
-| S1 | Delete share modules, table, and bootstrap init. Add a migration dropping `session_share`. | |
-| S2 | Remove `share` from `Session.Info` in the protocol and `setShare`. Regenerate the SDK. | Remove the field; the only consumer left is the TUI. |
-| S3 | Remove config keys, flag, CLI flag, `import` command, TUI command. | |
+| Id  | Change                                                                                     | Notes                                                |
+| --- | ------------------------------------------------------------------------------------------ | ---------------------------------------------------- |
+| S1  | Delete share modules, table, and bootstrap init. Add a migration dropping `session_share`. |                                                      |
+| S2  | Remove `share` from `Session.Info` in the protocol and `setShare`. Regenerate the SDK.     | Remove the field; the only consumer left is the TUI. |
+| S3  | Remove config keys, flag, CLI flag, `import` command, TUI command.                         |                                                      |
 
 ## 4. Verification
 
@@ -37,4 +37,4 @@ No code path can transmit a session transcript. The `share` concept is removed f
 ## 5. Divergence log
 
 | Upstream file | Change | Reason |
-|---|---|---|
+| ------------- | ------ | ------ |

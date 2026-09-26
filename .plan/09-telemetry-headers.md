@@ -21,12 +21,12 @@ No telemetry exporter exists in the binary. Requests to inference hosts carry no
 
 ## 3. Changes
 
-| Id | Change |
-|---|---|
-| T1 | Delete OTLP exporter, `OTEL_*` flag reads, `experimental.openTelemetry`, AI SDK `experimental_telemetry`, and the OpenTelemetry dependencies. Keep Effect's local tracer if other code depends on spans (`Effect.withSpan` is harmless without an exporter). |
-| T2 | Remove `username` config if nothing else uses it. |
-| T3 | Bun `--user-agent=hermit/<version>`. |
-| T4 | Cross-check after `01` lands: `grep -rn "x-session\|X-Session\|x-opencode\|HTTP-Referer\|X-Title\|os.release()" packages/opencode/src packages/core/src` is empty. |
+| Id  | Change                                                                                                                                                                                                                                                       |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| T1  | Delete OTLP exporter, `OTEL_*` flag reads, `experimental.openTelemetry`, AI SDK `experimental_telemetry`, and the OpenTelemetry dependencies. Keep Effect's local tracer if other code depends on spans (`Effect.withSpan` is harmless without an exporter). |
+| T2  | Remove `username` config if nothing else uses it.                                                                                                                                                                                                            |
+| T3  | Bun `--user-agent=hermit/<version>`.                                                                                                                                                                                                                         |
+| T4  | Cross-check after `01` lands: `grep -rn "x-session\|X-Session\|x-opencode\|HTTP-Referer\|X-Title\|os.release()" packages/opencode/src packages/core/src` is empty.                                                                                           |
 
 ## 4. Verification
 
@@ -36,4 +36,4 @@ No telemetry exporter exists in the binary. Requests to inference hosts carry no
 ## 5. Divergence log
 
 | Upstream file | Change | Reason |
-|---|---|---|
+| ------------- | ------ | ------ |

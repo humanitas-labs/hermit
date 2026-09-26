@@ -22,10 +22,10 @@ The binary never checks for, downloads, or installs a new version. Updates are a
 
 ## 3. Changes
 
-| Id | Change |
-|---|---|
-| U1 | Delete the startup check, the CLI command, the HttpApi route, the TUI dialog, the `Installation.latest/upgrade/method` functions, the two flags, and the `autoupdate` config key. Keep `Installation.Event` only if other events remain in that namespace. |
-| U2 | Regenerate the client after removing `global.upgrade`. |
+| Id  | Change                                                                                                                                                                                                                                                     |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| U1  | Delete the startup check, the CLI command, the HttpApi route, the TUI dialog, the `Installation.latest/upgrade/method` functions, the two flags, and the `autoupdate` config key. Keep `Installation.Event` only if other events remain in that namespace. |
+| U2  | Regenerate the client after removing `global.upgrade`.                                                                                                                                                                                                     |
 
 ## 4. Verification
 
@@ -35,4 +35,4 @@ The binary never checks for, downloads, or installs a new version. Updates are a
 ## 5. Divergence log
 
 | Upstream file | Change | Reason |
-|---|---|---|
+| ------------- | ------ | ------ |

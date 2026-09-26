@@ -16,13 +16,13 @@ Network-capable tools stay. Every tool-driven request is visible through tool ex
 
 ## 3. Changes
 
-| Id | Change | Notes |
-|---|---|---|
-| W1 | `websearch` becomes explicit config: `websearch: { provider: "exa" \| "parallel", apiKey?: string }` or absent. Remove the `opencode`/`opencode-go` provider gate and the `OPENCODE_ENABLE_*` / `OPENCODE_EXPERIMENTAL` flags. Absent config means the tool is not registered. | The upstream gate ties the tool to the Zen provider, which is gone. |
-| W2 | Stop sending `session_id` and `model_name` to Parallel (`websearch.ts:73-77`). Send the query only. | Application metadata (class A) riding on a tool call. |
-| W3 | Replace the spoofed Chrome User-Agent in `webfetch` with `hermit/<version>`. | Honest identification; no privacy effect. |
-| W4 | Add a startup log line listing configured remote MCP servers and their URLs. | Visibility, not restriction. |
-| W5 | No change to `webfetch` permissions, remote `instructions[]`, `skills.urls`, `references[].repository`, MCP OAuth, or `bash`. These are user-requested network access per `docs/privacy-model.md` sections 2 and 7. | Future tool-egress controls (section 7.3) are out of scope for this pass. |
+| Id  | Change                                                                                                                                                                                                                                                                         | Notes                                                                     |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------- |
+| W1  | `websearch` becomes explicit config: `websearch: { provider: "exa" \| "parallel", apiKey?: string }` or absent. Remove the `opencode`/`opencode-go` provider gate and the `OPENCODE_ENABLE_*` / `OPENCODE_EXPERIMENTAL` flags. Absent config means the tool is not registered. | The upstream gate ties the tool to the Zen provider, which is gone.       |
+| W2  | Stop sending `session_id` and `model_name` to Parallel (`websearch.ts:73-77`). Send the query only.                                                                                                                                                                            | Application metadata (class A) riding on a tool call.                     |
+| W3  | Replace the spoofed Chrome User-Agent in `webfetch` with `hermit/<version>`.                                                                                                                                                                                                   | Honest identification; no privacy effect.                                 |
+| W4  | Add a startup log line listing configured remote MCP servers and their URLs.                                                                                                                                                                                                   | Visibility, not restriction.                                              |
+| W5  | No change to `webfetch` permissions, remote `instructions[]`, `skills.urls`, `references[].repository`, MCP OAuth, or `bash`. These are user-requested network access per `docs/privacy-model.md` sections 2 and 7.                                                            | Future tool-egress controls (section 7.3) are out of scope for this pass. |
 
 ## 4. Preserve
 
@@ -37,4 +37,4 @@ Network-capable tools stay. Every tool-driven request is visible through tool ex
 ## 6. Divergence log
 
 | Upstream file | Change | Reason |
-|---|---|---|
+| ------------- | ------ | ------ |

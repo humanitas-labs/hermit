@@ -18,22 +18,22 @@ Installed plugins and inference servers are trusted executable components. Hermi
 
 ## 1. Files
 
-| File | Purpose |
-|---|---|
-| `00-audit.md` | The full audit: architecture map, inference paths, every outbound network surface, categorization, risks, and the proposed sequence. Read this first. |
-| `01-catalog-providers.md` | Model catalog (models.dev), provider registry, OpenCode Zen autoload, provider allowlist, request headers. |
-| `02-accounts-remote-config.md` | OpenCode console accounts, console-pushed config, well-known remote config, V2 opencode integration. |
-| `03-share.md` | Session sharing transport. |
-| `04-update-install.md` | Update check, silent self-upgrade, install script. |
-| `05-plugins-npm.md` | Runtime npm installs: bootstrap `@opencode-ai/plugin`, config plugins, built-in auth plugins. |
-| `06-tools-search.md` | `websearch` made explicit config with no session metadata; `webfetch` User-Agent; tools otherwise preserved. |
-| `07-binaries-lsp.md` | Bundle ripgrep; make the LSP download flag cover npm servers; log downloads. |
-| `08-server-ui.md` | Local HTTP server, `app.opencode.ai` UI proxy, mDNS, GitHub command. |
-| `09-telemetry-headers.md` | OTLP export, AI SDK telemetry, identifying headers sent to providers. |
-| `10-inference-boundary.md` | Inference policy: inventory of every Hermit-managed model call path, per-request endpoint classification (local, user-controlled, third party), fail-closed destination check, policy ownership, presets, visible trust class in the TUI. |
-| `11-verification.md` | Network-inspection test harness that verifies the acceptance contract across the supported execution paths and records coverage and limitations; optional strict deployment docs. |
-| `12-branding.md` | Rename to Hermit: binary, config paths, default theme, docs. |
-| `13-strip.md` | Delete everything that is not the agent: hosted services, marketing, packaging, ops, and optionally the web UI stack. Runs first. |
+| File                           | Purpose                                                                                                                                                                                                                                   |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `00-audit.md`                  | The full audit: architecture map, inference paths, every outbound network surface, categorization, risks, and the proposed sequence. Read this first.                                                                                     |
+| `01-catalog-providers.md`      | Model catalog (models.dev), provider registry, OpenCode Zen autoload, provider allowlist, request headers.                                                                                                                                |
+| `02-accounts-remote-config.md` | OpenCode console accounts, console-pushed config, well-known remote config, V2 opencode integration.                                                                                                                                      |
+| `03-share.md`                  | Session sharing transport.                                                                                                                                                                                                                |
+| `04-update-install.md`         | Update check, silent self-upgrade, install script.                                                                                                                                                                                        |
+| `05-plugins-npm.md`            | Runtime npm installs: bootstrap `@opencode-ai/plugin`, config plugins, built-in auth plugins.                                                                                                                                             |
+| `06-tools-search.md`           | `websearch` made explicit config with no session metadata; `webfetch` User-Agent; tools otherwise preserved.                                                                                                                              |
+| `07-binaries-lsp.md`           | Bundle ripgrep; make the LSP download flag cover npm servers; log downloads.                                                                                                                                                              |
+| `08-server-ui.md`              | Local HTTP server, `app.opencode.ai` UI proxy, mDNS, GitHub command.                                                                                                                                                                      |
+| `09-telemetry-headers.md`      | OTLP export, AI SDK telemetry, identifying headers sent to providers.                                                                                                                                                                     |
+| `10-inference-boundary.md`     | Inference policy: inventory of every Hermit-managed model call path, per-request endpoint classification (local, user-controlled, third party), fail-closed destination check, policy ownership, presets, visible trust class in the TUI. |
+| `11-verification.md`           | Network-inspection test harness that verifies the acceptance contract across the supported execution paths and records coverage and limitations; optional strict deployment docs.                                                         |
+| `12-branding.md`               | Rename to Hermit: binary, config paths, default theme, docs.                                                                                                                                                                              |
+| `13-strip.md`                  | Delete everything that is not the agent: hosted services, marketing, packaging, ops, and optionally the web UI stack. Runs first.                                                                                                         |
 
 ## 2. Status legend
 
