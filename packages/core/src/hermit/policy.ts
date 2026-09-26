@@ -187,7 +187,14 @@ export function narrow(policy: Policy) {
   return active
 }
 
-// Test hook. Production code never widens the global policy.
+// The one legitimate widening: the user changed their own user-level config through the app.
+// The global policy is replaced by that config's policy and instances narrow it again on reload.
+export function replace(policy: Policy) {
+  active = policy
+  seen = false
+}
+
+// Test hook.
 export function reset(policy: Policy = DEFAULT) {
   active = policy
   seen = false

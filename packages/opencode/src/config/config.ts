@@ -709,7 +709,10 @@ const layer = Layer.effect(
         if (changed) yield* fs.writeFileString(file, updated).pipe(Effect.orDie)
       }
 
-      if (changed) yield* invalidate()
+      if (changed) {
+        yield* invalidate()
+        HermitPolicy.replace(HermitPolicy.fromConfig(next))
+      }
       return { info: next, changed }
     })
 

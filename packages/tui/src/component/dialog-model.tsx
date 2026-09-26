@@ -8,6 +8,8 @@ import { DialogVariant } from "./dialog-variant"
 import * as fuzzysort from "fuzzysort"
 import { useConnected } from "./use-connected"
 import { useSync } from "../context/sync"
+import { useSDK } from "../context/sdk"
+import { DialogConfirm } from "../ui/dialog-confirm"
 
 // Hermit: show the trust class of each model's endpoint and mark what the preset refuses.
 function boundaryFooter(model: { boundary?: "local" | "user" | "third-party"; permitted?: boolean }) {
@@ -20,7 +22,29 @@ export function DialogModel(props: { providerID?: string }) {
   const local = useLocal()
   const sync = useSync()
   const dialog = useDialog()
+  const sdk = useSDK()
   const [query, setQuery] = createSignal("")
+
+  // Refused models stay listed so a newcomer sees what the preset excludes. Choosing one explains
+  // the class and offers to widen the preset in the user config, which is the only place it lives.
+  async function allow(
+    provider: { id: string; name: string },
+    model: { id: string; name?: string; boundary?: "local" | "user" | "third-party"; permitted?: boolean },
+  ) {
+    if (model.permitted !== false) return true
+    const preset = model.boundary === "user" ? "trusted" : "external"
+    const where = model.boundary === "user" ? "a remote endpoint you marked as yours" : "a third-party service"
+    const ok = await DialogConfirm.show(
+      dialog,
+      `Allow ${model.boundary === "user" ? "user" : "third-party"} inference?`,
+      `${model.name ?? model.id} on ${provider.name} runs on ${where}. Your prompts, the files the agent reads, and its context will be sent there. Allowing sets hermit.preset to "${preset}" in your user config and applies to every session until you change it back.`,
+    )
+    if (!ok) return false
+    await sdk.client.global.config.update({ config: { hermit: { preset } } }, { throwOnError: true })
+    await sdk.client.instance.dispose()
+    await sync.bootstrap()
+    return true
+  }
 
   const connected = useConnected()
   const providers = createDialogProviderOptions()
@@ -47,10 +71,10 @@ export function DialogModel(props: { providerID?: string }) {
             title: model.name ?? item.modelID,
             description: provider.name,
             category,
-            disabled: (provider.id === "opencode" && model.id.includes("-nano")) || model.permitted === false,
+            disabled: provider.id === "opencode" && model.id.includes("-nano"),
             footer: boundaryFooter(model),
             onSelect: () => {
-              onSelect(provider.id, model.id)
+              void allow(provider, model).then((ok) => ok && onSelect(provider.id, model.id))
             },
           },
         ]
@@ -85,10 +109,10 @@ export function DialogModel(props: { providerID?: string }) {
               ? "(Favorite)"
               : undefined,
             category: connected() ? provider.name : undefined,
-            disabled: (provider.id === "opencode" && model.includes("-nano")) || info.permitted === false,
+            disabled: provider.id === "opencode" && model.includes("-nano"),
             footer: boundaryFooter(info),
             onSelect() {
-              onSelect(provider.id, model)
+              void allow(provider, info).then((ok) => ok && onSelect(provider.id, model))
             },
           })),
           filter((option) => {
