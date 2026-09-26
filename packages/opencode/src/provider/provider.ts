@@ -476,14 +476,23 @@ function custom(dep: CustomDep): Record<string, CustomLoader> {
           },
         },
       }),
-    openrouter: () =>
+    openrouter: (provider) =>
       Effect.succeed({
-        autoload: false,
+        // Hermit: also load for config-only setups so the ZDR default below applies to them.
+        autoload: provider.source === "config",
         options: {
           headers: {
             "HTTP-Referer": "https://opencode.ai/",
             "X-Title": "opencode",
           },
+        },
+        // Hermit: route only to endpoints OpenRouter certifies as zero data retention unless the
+        // user's model options say otherwise. See https://openrouter.ai/docs/features/zdr
+        async getModel(sdk: any, modelID: string, options?: Record<string, any>) {
+          return sdk.languageModel(modelID, {
+            ...options,
+            provider: { zdr: true, ...options?.provider },
+          })
         },
       }),
     nvidia: (provider) =>

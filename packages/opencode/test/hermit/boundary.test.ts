@@ -24,12 +24,14 @@ const it = testEffect(
 )
 
 const hits: string[] = []
+const bodies: Record<string, unknown>[] = []
 const server = Bun.serve({
   hostname: "0.0.0.0",
   port: 0,
-  fetch(request) {
+  async fetch(request) {
     const url = new URL(request.url)
     hits.push(url.pathname)
+    if (request.method === "POST") bodies.push(await request.json().catch(() => ({})))
     if (url.pathname.startsWith("/redirect")) return Response.redirect(`${url.origin}/leak/chat/completions`, 307)
     return new Response(
       `data: ${JSON.stringify({ id: "1", object: "chat.completion.chunk", choices: [{ index: 0, delta: { content: "ok" }, finish_reason: "stop" }] })}\n\ndata: [DONE]\n\n`,
@@ -43,6 +45,7 @@ const userConfig = path.join(Global.Path.config, "opencode.json")
 
 afterEach(async () => {
   hits.length = 0
+  bodies.length = 0
   await Bun.file(userConfig)
     .delete()
     .catch(() => {})
@@ -213,6 +216,39 @@ it.live("a small_model on a remote provider is refused during a private session"
         provider: {
           ...testProviderConfig(local).provider,
           remote: { ...testProviderConfig(remote).provider.test, id: "remote", name: "Remote" },
+        },
+      },
+    },
+  ),
+)
+
+it.live("openrouter requests ask for zero data retention endpoints by default", () =>
+  provideTmpdirInstance(
+    () =>
+      Effect.gen(function* () {
+        const provider = yield* Provider.Service
+        const model = yield* provider.getModel(ProviderV2.ID.openrouter, ModelV2.ID.make("test/zdr"))
+        const result = streamText({
+          model: yield* provider.getLanguage(model),
+          onError() {},
+          messages: [{ role: "user", content: "hello" }],
+        })
+        yield* Effect.promise(async () => {
+          for await (const _ of result.fullStream) {
+          }
+        })
+        expect(hits).toHaveLength(1)
+        expect(bodies[0]?.provider).toEqual({ zdr: true })
+      }),
+    {
+      config: {
+        ...testProviderConfig(local),
+        provider: {
+          openrouter: {
+            npm: "@openrouter/ai-sdk-provider",
+            options: { apiKey: "test-key", baseURL: local },
+            models: { "test/zdr": { name: "ZDR", tool_call: true } },
+          },
         },
       },
     },
