@@ -10,27 +10,10 @@ import { ChildProcess } from "effect/unstable/process"
 import { AppProcess } from "@opencode-ai/core/process"
 import path from "path"
 import { makeRuntime } from "@opencode-ai/core/effect/runtime"
-import semver from "semver"
 import { InstallationChannel, InstallationVersion } from "@opencode-ai/core/installation/version"
 import { NpmConfig } from "@opencode-ai/core/npm-config"
-import { InstallationEvent } from "@opencode-ai/schema/installation-event"
 
 export type Method = "curl" | "npm" | "yarn" | "pnpm" | "bun" | "brew" | "scoop" | "choco" | "unknown"
-
-export type ReleaseType = "patch" | "minor" | "major"
-
-export const Event = InstallationEvent
-
-export function getReleaseType(current: string, latest: string): ReleaseType {
-  const currMajor = semver.major(current)
-  const currMinor = semver.minor(current)
-  const newMajor = semver.major(latest)
-  const newMinor = semver.minor(latest)
-
-  if (newMajor > currMajor) return "major"
-  if (newMinor > currMinor) return "minor"
-  return "patch"
-}
 
 export const Info = Schema.Struct({
   version: Schema.String,

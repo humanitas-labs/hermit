@@ -50,11 +50,6 @@ export function FormatError(input: unknown): string | undefined {
     return `MCP server "${data}" failed. Note, opencode does not support MCP authentication yet.`
   }
 
-  // AccountServiceError, AccountTransportError: TaggedErrorClass
-  if (isTaggedError(input, "AccountServiceError") || isTaggedError(input, "AccountTransportError")) {
-    return stringField(input, "message") ?? ""
-  }
-
   // ProviderModelNotFoundError: { providerID: string, modelID: string, suggestions?: string[] }
   const providerModelNotFound = configData(input, "ProviderModelNotFoundError")
   if (providerModelNotFound) {
@@ -92,18 +87,6 @@ export function FormatError(input: unknown): string | undefined {
   const configFrontmatter = configData(input, "ConfigFrontmatterError")
   if (configFrontmatter) {
     return stringField(configFrontmatter, "message") ?? ""
-  }
-
-  // ConfigRemoteAuthError: { url: string, remote: string }
-  const remoteAuth = configData(input, "ConfigRemoteAuthError")
-  if (remoteAuth) {
-    const url = stringField(remoteAuth, "url")
-    const remote = stringField(remoteAuth, "remote")
-    return [
-      `Failed to load remote config${remote ? ` from ${remote}` : ""}: the server returned a login page instead of JSON.`,
-      `Authentication is missing or has expired (the endpoint is likely behind an SSO or identity-aware proxy).`,
-      ...(url ? [`Run \`opencode auth login ${url}\` to re-authenticate.`] : []),
-    ].join("\n")
   }
 
   // ConfigInvalidError: { path?: string, message?: string, issues?: Array<{ message: string, path: string[] }> }

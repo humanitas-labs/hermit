@@ -480,16 +480,6 @@ const scenarios: Scenario[] = [
     .get("/pty/{ptyID}/connect", "pty.connect")
     .at((ctx) => ({ path: route("/pty/{ptyID}/connect", { ptyID: "pty_httpapi_missing" }), headers: ctx.headers() }))
     .status(404, undefined, "none"),
-  http.protected.get("/experimental/console", "experimental.console.get").json(),
-  http.protected.get("/experimental/console/orgs", "experimental.console.listOrgs").json(),
-  http.protected
-    .post("/experimental/console/switch", "experimental.console.switchOrg")
-    .at((ctx) => ({
-      path: "/experimental/console/switch",
-      headers: ctx.headers(),
-      body: { accountID: "httpapi-account", orgID: "httpapi-org" },
-    }))
-    .status(400, undefined, "none"),
   http.protected.get("/experimental/workspace/adapter", "experimental.workspace.adapter.list").json(200, array),
   http.protected.get("/experimental/workspace", "experimental.workspace.list").json(200, array),
   http.protected.get("/experimental/workspace/status", "experimental.workspace.status").json(200, array),
@@ -1652,32 +1642,6 @@ const scenarios: Scenario[] = [
     }))
     .json(404, object, "status"),
   http.protected
-    .post("/session/{sessionID}/share", "session.share")
-    .mutating()
-    .seeded((ctx) => ctx.session({ title: "Share session" }))
-    .at((ctx) => ({ path: route("/session/{sessionID}/share", { sessionID: ctx.state.id }), headers: ctx.headers() }))
-    .json(
-      200,
-      (body, ctx) => {
-        object(body)
-        check(body.id === ctx.state.id, "share should return the session")
-      },
-      "status",
-    ),
-  http.protected
-    .delete("/session/{sessionID}/share", "session.unshare")
-    .mutating()
-    .seeded((ctx) => ctx.session({ title: "Unshare session" }))
-    .at((ctx) => ({ path: route("/session/{sessionID}/share", { sessionID: ctx.state.id }), headers: ctx.headers() }))
-    .json(
-      200,
-      (body, ctx) => {
-        object(body)
-        check(body.id === ctx.state.id, "unshare should return the session")
-      },
-      "status",
-    ),
-  http.protected
     .post("/tui/append-prompt", "tui.appendPrompt")
     .at((ctx) => ({ path: "/tui/append-prompt", headers: ctx.headers(), body: { text: "hello" } }))
     .json(200, boolean, "status"),
@@ -1734,12 +1698,6 @@ const scenarios: Scenario[] = [
       },
       "status",
     ),
-  http.protected
-    .post("/global/upgrade", "global.upgrade")
-    .global()
-    .probe({ path: "/global/upgrade", body: { target: 1 } })
-    .at(() => ({ path: "/global/upgrade", body: { target: 1 } }))
-    .status(400),
 ]
 
 const llmScenarios = new Set([

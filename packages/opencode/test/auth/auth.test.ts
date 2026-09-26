@@ -11,9 +11,8 @@ describe("Auth", () => {
     Effect.gen(function* () {
       const auth = yield* Auth.Service
       yield* auth.set("https://example.com/", {
-        type: "wellknown",
-        key: "TOKEN",
-        token: "abc",
+        type: "api",
+        key: "abc",
       })
       const data = yield* auth.all()
       expect(data["https://example.com"]).toBeDefined()
@@ -25,21 +24,19 @@ describe("Auth", () => {
     Effect.gen(function* () {
       const auth = yield* Auth.Service
       yield* auth.set("https://example.com/", {
-        type: "wellknown",
-        key: "TOKEN",
-        token: "old",
+        type: "api",
+        key: "old",
       })
       yield* auth.set("https://example.com", {
-        type: "wellknown",
-        key: "TOKEN",
-        token: "new",
+        type: "api",
+        key: "new",
       })
       const data = yield* auth.all()
       const keys = Object.keys(data).filter((key) => key.includes("example.com"))
       expect(keys).toEqual(["https://example.com"])
       const entry = data["https://example.com"]!
-      expect(entry.type).toBe("wellknown")
-      if (entry.type === "wellknown") expect(entry.token).toBe("new")
+      expect(entry.type).toBe("api")
+      if (entry.type === "api") expect(entry.key).toBe("new")
     }),
   )
 
@@ -47,9 +44,8 @@ describe("Auth", () => {
     Effect.gen(function* () {
       const auth = yield* Auth.Service
       yield* auth.set("https://example.com", {
-        type: "wellknown",
-        key: "TOKEN",
-        token: "abc",
+        type: "api",
+        key: "abc",
       })
       yield* auth.remove("https://example.com/")
       const data = yield* auth.all()

@@ -1,10 +1,7 @@
 import { test, expect, describe, afterEach, beforeEach, spyOn } from "bun:test"
 import { ConfigV1 } from "@opencode-ai/core/v1/config/config"
 import { LayerNode } from "@opencode-ai/core/effect/layer-node"
-import { httpClient } from "@opencode-ai/core/effect/app-node-platform"
-import { Cause, Effect, Exit, Layer, Logger, Option } from "effect"
-import { NamedError } from "@opencode-ai/core/util/error"
-import { FetchHttpClient, HttpClient, HttpClientResponse } from "effect/unstable/http"
+import { Cause, Effect, Exit, Logger } from "effect"
 import { Config } from "@/config/config"
 import { ConfigManaged } from "@/config/managed"
 import { ConfigParse } from "../../src/config/parse"
@@ -14,9 +11,6 @@ import { Npm } from "@opencode-ai/core/npm"
 
 import { InstanceRef } from "../../src/effect/instance-ref"
 import type { InstanceContext } from "../../src/project/instance-context"
-import { Auth } from "../../src/auth"
-import { Account } from "../../src/account/account"
-import { AccessToken, AccountID, OrgID } from "../../src/account/schema"
 import { FSUtil } from "@opencode-ai/core/fs-util"
 import { Env } from "../../src/env"
 import {
@@ -40,77 +34,13 @@ import { ProjectV2 } from "@opencode-ai/core/project"
 import { Filesystem } from "@/util/filesystem"
 import { ConfigPlugin } from "@/config/plugin"
 import { ConfigPluginV1 } from "@opencode-ai/core/v1/config/plugin"
-import { AccountTest } from "../fake/account"
-import { AuthTest } from "../fake/auth"
 import { NpmTest } from "../fake/npm"
 
-const unexpectedHttp = HttpClient.make((request) =>
-  Effect.die(`unexpected http request: ${request.method} ${request.url}`),
-)
-
-const json = (request: Parameters<typeof HttpClientResponse.fromWeb>[0], body: unknown, status = 200) =>
-  HttpClientResponse.fromWeb(
-    request,
-    new Response(JSON.stringify(body), {
-      status,
-      headers: { "content-type": "application/json" },
-    }),
-  )
-
-const wellKnownAuth = (url: string) =>
-  Layer.mock(Auth.Service)({
-    all: () =>
-      Effect.succeed({
-        [url]: new Auth.WellKnown({ type: "wellknown", key: "TEST_TOKEN", token: "test-token" }),
-      }),
-  })
-
-function remoteConfigClient(input: {
-  wellKnown: unknown
-  remote?: unknown
-  remoteHtml?: string
-  seen: { wellKnown?: string; remote?: string; authorization?: string }
-}) {
-  return HttpClient.make((request) => {
-    if (request.url.includes(".well-known/opencode")) {
-      input.seen.wellKnown = request.url
-      return Effect.succeed(json(request, input.wellKnown))
-    }
-    if (request.url.includes("config.example.com") && (input.remote !== undefined || input.remoteHtml !== undefined)) {
-      input.seen.remote = request.url
-      input.seen.authorization = request.headers.authorization
-      if (input.remoteHtml !== undefined) {
-        return Effect.succeed(
-          HttpClientResponse.fromWeb(
-            request,
-            new Response(input.remoteHtml, { status: 200, headers: { "content-type": "text/html; charset=utf-8" } }),
-          ),
-        )
-      }
-      return Effect.succeed(json(request, input.remote))
-    }
-    return Effect.succeed(json(request, {}, 404))
-  })
-}
-
-const configLayer = (
-  options: {
-    auth?: Layer.Layer<Auth.Service>
-    account?: Layer.Layer<Account.Service>
-    client?: HttpClient.HttpClient
-  } = {},
-) =>
-  LayerNode.compile(LayerNode.group([Config.node, FSUtil.node, Env.node, CrossSpawnSpawner.node]), [
-    [Auth.node, options.auth ?? AuthTest.empty],
-    [Account.node, options.account ?? AccountTest.empty],
-    [Npm.node, NpmTest.noop],
-    [httpClient, Layer.succeed(HttpClient.HttpClient, options.client ?? unexpectedHttp)],
-  ])
-
-const layer = configLayer()
+const layer = LayerNode.compile(LayerNode.group([Config.node, FSUtil.node, Env.node, CrossSpawnSpawner.node]), [
+  [Npm.node, NpmTest.noop],
+])
 
 const it = testEffect(layer)
-const configIt = (options?: Parameters<typeof configLayer>[0]) => testEffect(configLayer(options))
 
 const schemaConfig = (config: object) => ({ $schema: "https://opencode.ai/config.json", ...config })
 
@@ -133,7 +63,6 @@ const clear = (wait = false) => Effect.runPromise(clearEffect(wait))
 // Get managed config directory from environment (set in preload.ts)
 const managedConfigDir = process.env.OPENCODE_TEST_MANAGED_CONFIG_DIR!
 const originalTestToken = process.env.TEST_TOKEN
-const originalConsoleToken = process.env.OPENCODE_CONSOLE_TOKEN
 
 beforeEach(async () => {
   await clear(true)
@@ -143,8 +72,6 @@ afterEach(async () => {
   await fs.rm(managedConfigDir, { force: true, recursive: true }).catch(() => {})
   if (originalTestToken === undefined) delete process.env.TEST_TOKEN
   else process.env.TEST_TOKEN = originalTestToken
-  if (originalConsoleToken === undefined) delete process.env.OPENCODE_CONSOLE_TOKEN
-  else process.env.OPENCODE_CONSOLE_TOKEN = originalConsoleToken
   await clear(true)
 })
 
@@ -210,30 +137,6 @@ const withConfigTree = <A, E, R>(
     )
     return yield* withGlobalConfigDir(global, withInstanceDir(directory, effect))
   })
-
-const wellKnown = (input: {
-  authUrl?: string
-  config?: unknown
-  remoteConfig?: { url: string; headers?: Record<string, string> }
-  remote?: unknown
-  remoteHtml?: string
-  wellKnown?: unknown
-}) => {
-  const seen: { wellKnown?: string; remote?: string; authorization?: string } = {}
-  const client = remoteConfigClient({
-    seen,
-    wellKnown: input.wellKnown ?? {
-      ...(input.config !== undefined ? { config: input.config } : {}),
-      ...(input.remoteConfig !== undefined ? { remote_config: input.remoteConfig } : {}),
-    },
-    remote: input.remote,
-    remoteHtml: input.remoteHtml,
-  })
-  return {
-    seen,
-    it: configIt({ auth: wellKnownAuth(input.authUrl ?? "https://example.com"), client }),
-  }
-}
 
 function withProcessEnv<A, E, R>(key: string, value: string | undefined, effect: Effect.Effect<A, E, R>) {
   return withProcessEnvs({ [key]: value }, effect)
@@ -741,49 +644,6 @@ it.instance("handles file inclusion with replacement tokens", () =>
   }),
 )
 
-const accountTokenIt = configIt({
-  account: Layer.mock(Account.Service)({
-    active: () =>
-      Effect.succeed(
-        Option.some({
-          id: AccountID.make("account-1"),
-          email: "user@example.com",
-          url: "https://control.example.com",
-          active_org_id: OrgID.make("org-1"),
-        }),
-      ),
-    activeOrg: () =>
-      Effect.succeed(
-        Option.some({
-          account: {
-            id: AccountID.make("account-1"),
-            email: "user@example.com",
-            url: "https://control.example.com",
-            active_org_id: OrgID.make("org-1"),
-          },
-          org: {
-            id: OrgID.make("org-1"),
-            name: "Example Org",
-          },
-        }),
-      ),
-    config: () =>
-      Effect.succeed(
-        Option.some({
-          provider: { opencode: { options: { apiKey: "{env:OPENCODE_CONSOLE_TOKEN}" } } },
-        }),
-      ),
-    token: () => Effect.succeed(Option.some(AccessToken.make("st_test_token"))),
-  }),
-})
-
-accountTokenIt.instance("resolves env templates in account config with account token", () =>
-  Effect.gen(function* () {
-    const config = yield* Config.use.get()
-    expect(config.provider?.["opencode"]?.options?.apiKey).toBe("st_test_token")
-  }),
-)
-
 it.instance("validates config schema and throws on invalid values", () =>
   Effect.gen(function* () {
     const test = yield* TestInstance
@@ -872,19 +732,6 @@ it.instance("handles command configuration", () =>
       description: "test command",
       agent: "test_agent",
     })
-  }),
-)
-
-it.instance("migrates autoshare to share field", () =>
-  Effect.gen(function* () {
-    const test = yield* TestInstance
-    yield* writeConfigEffect(test.directory, {
-      $schema: "https://opencode.ai/config.json",
-      autoshare: true,
-    })
-    const config = yield* Config.use.get()
-    expect(config.share).toBe("auto")
-    expect(config.autoshare).toBe(true)
   }),
 )
 
@@ -1375,15 +1222,15 @@ it.instance(
     yield* writeManagedSettingsEffect({
       $schema: "https://opencode.ai/config.json",
       model: "managed/model",
-      share: "disabled",
+      logLevel: "DEBUG",
     })
 
     const config = yield* Config.use.get()
     expect(config.model).toBe("managed/model")
-    expect(config.share).toBe("disabled")
+    expect(config.logLevel).toBe("DEBUG")
     expect(config.username).toBe("testuser")
   }),
-  { config: { model: "user/model", share: "auto", username: "testuser" } },
+  { config: { model: "user/model", logLevel: "INFO", username: "testuser" } },
 )
 
 it.instance(
@@ -1391,15 +1238,15 @@ it.instance(
   Effect.gen(function* () {
     yield* writeManagedSettingsEffect({
       $schema: "https://opencode.ai/config.json",
-      autoupdate: false,
+      snapshot: false,
       disabled_providers: ["openai"],
     })
 
     const config = yield* Config.use.get()
-    expect(config.autoupdate).toBe(false)
+    expect(config.snapshot).toBe(false)
     expect(config.disabled_providers).toEqual(["openai"])
   }),
-  { config: { autoupdate: true, disabled_providers: [] } },
+  { config: { snapshot: true, disabled_providers: [] } },
 )
 
 it.instance("managed jsonc settings override managed json settings", () =>
@@ -1541,7 +1388,7 @@ test("config parser preserves permission order while ignoring unknown top-level 
 it.instance("project config can override MCP server enabled status", () =>
   Effect.gen(function* () {
     const test = yield* TestInstance
-    // Simulates a base config (like from remote .well-known) with disabled MCP.
+    // Simulates a base config with disabled MCP.
     yield* writeConfigEffect(test.directory, {
       $schema: "https://opencode.ai/config.json",
       mcp: {
@@ -1662,200 +1509,6 @@ it.instance("local .opencode config can override MCP from project config", () =>
     const config = yield* Config.use.get()
     expect(config.mcp?.docs?.enabled).toBe(true)
   }),
-)
-
-const remoteProjectOverride = wellKnown({
-  config: {
-    mcp: { jira: { type: "remote", url: "https://jira.example.com/mcp", enabled: false } },
-  },
-})
-
-remoteProjectOverride.it.instance(
-  "project config overrides remote well-known config",
-  () =>
-    Effect.gen(function* () {
-      const config = yield* Config.use.get()
-      expect(remoteProjectOverride.seen.wellKnown).toBe("https://example.com/.well-known/opencode")
-      expect(config.mcp?.jira?.enabled).toBe(true)
-    }),
-  {
-    git: true,
-    config: { mcp: { jira: { type: "remote", url: "https://jira.example.com/mcp", enabled: true } } },
-  },
-)
-
-const trailingSlashWellKnown = wellKnown({
-  authUrl: "https://example.com/",
-  config: {
-    mcp: { slack: { type: "remote", url: "https://slack.example.com/mcp", enabled: true } },
-  },
-})
-
-trailingSlashWellKnown.it.instance("wellknown URL with trailing slash is normalized", () =>
-  Effect.gen(function* () {
-    yield* Config.use.get()
-    expect(trailingSlashWellKnown.seen.wellKnown).toBe("https://example.com/.well-known/opencode")
-  }),
-)
-
-test("remote well-known config can use FetchHttpClient layer", async () => {
-  let fetchedUrl: string | undefined
-  const server = Bun.serve({
-    port: 0,
-    fetch: (request) => {
-      fetchedUrl = request.url
-      return new Response(
-        JSON.stringify({
-          config: {
-            mcp: { jira: { type: "remote", url: "https://jira.example.com/mcp", enabled: true } },
-          },
-        }),
-        { status: 200, headers: { "content-type": "application/json" } },
-      )
-    },
-  })
-
-  try {
-    await provideTmpdirInstance(
-      () =>
-        Config.Service.use((svc) =>
-          Effect.gen(function* () {
-            const config = yield* svc.get()
-            expect(fetchedUrl).toBe(`${server.url.origin}/.well-known/opencode`)
-            expect(config.mcp?.jira?.enabled).toBe(true)
-          }),
-        ),
-      { git: true },
-    ).pipe(
-      Effect.scoped,
-      Effect.provide(
-        Layer.mergeAll(
-          LayerNode.compile(LayerNode.group([Config.node, FSUtil.node, Env.node, CrossSpawnSpawner.node]), [
-            [Auth.node, wellKnownAuth(server.url.origin)],
-            [Account.node, AccountTest.empty],
-            [Npm.node, NpmTest.noop],
-            [httpClient, FetchHttpClient.layer],
-          ]),
-          testInstanceStoreLayer,
-        ),
-      ),
-      Effect.runPromise,
-    )
-  } finally {
-    await server.stop(true)
-  }
-})
-
-const templatedHeaderWellKnown = wellKnown({
-  remoteConfig: {
-    url: "https://config.example.com/opencode.json",
-    headers: { Authorization: "Bearer {env:TEST_TOKEN}" },
-  },
-  remote: {
-    mcp: { confluence: { type: "remote", url: "https://confluence.example.com/mcp", enabled: true } },
-  },
-})
-
-templatedHeaderWellKnown.it.instance("wellknown remote_config supports templated env vars in headers", () =>
-  Effect.gen(function* () {
-    const config = yield* Config.use.get()
-    expect(templatedHeaderWellKnown.seen.wellKnown).toBe("https://example.com/.well-known/opencode")
-    expect(templatedHeaderWellKnown.seen.remote).toBe("https://config.example.com/opencode.json")
-    expect(templatedHeaderWellKnown.seen.authorization).toBe("Bearer test-token")
-    expect(config.mcp?.confluence?.enabled).toBe(true)
-  }),
-)
-
-const remotePrecedenceWellKnown = wellKnown({
-  config: {
-    mcp: { confluence: { type: "remote", url: "https://confluence.example.com/mcp", enabled: false } },
-  },
-  remoteConfig: { url: "https://config.example.com/{env:TEST_TOKEN}/opencode.json" },
-  remote: {
-    config: { mcp: { confluence: { type: "remote", url: "https://confluence.example.com/mcp", enabled: true } } },
-  },
-})
-
-remotePrecedenceWellKnown.it.instance(
-  "wellknown remote_config url tokens and nested config override embedded config",
-  () =>
-    Effect.gen(function* () {
-      const config = yield* Config.use.get()
-      expect(remotePrecedenceWellKnown.seen.remote).toBe("https://config.example.com/test-token/opencode.json")
-      expect(config.mcp?.confluence?.enabled).toBe(true)
-    }),
-)
-
-const envIsolationWellKnown = wellKnown({
-  remoteConfig: {
-    url: "https://config.example.com/opencode.json",
-    headers: { Authorization: "Bearer {env:TEST_TOKEN}" },
-  },
-  remote: {
-    mcp: { confluence: { type: "remote", url: "https://confluence.example.com/mcp", enabled: true } },
-  },
-})
-
-envIsolationWellKnown.it.instance(
-  "wellknown token env substitution does not mutate process env",
-  () =>
-    Effect.gen(function* () {
-      process.env.TEST_TOKEN = "preexisting-token"
-      const config = yield* Config.use.get()
-      expect(envIsolationWellKnown.seen.authorization).toBe("Bearer test-token")
-      expect(config.username).toBe("test-token")
-      expect(process.env.TEST_TOKEN).toBe("preexisting-token")
-    }),
-  { git: true, config: { username: "{env:TEST_TOKEN}" } },
-)
-
-const nullConfigWellKnown = wellKnown({
-  wellKnown: {
-    config: null,
-    remote_config: { url: "https://config.example.com/opencode.json" },
-  },
-  remote: {
-    mcp: { confluence: { type: "remote", url: "https://confluence.example.com/mcp", enabled: true } },
-  },
-})
-
-nullConfigWellKnown.it.instance("wellknown config null is treated as absent", () =>
-  Effect.gen(function* () {
-    const config = yield* Config.use.get()
-    expect(nullConfigWellKnown.seen.remote).toBe("https://config.example.com/opencode.json")
-    expect(config.mcp?.confluence?.enabled).toBe(true)
-  }),
-)
-
-const invalidRemoteWellKnown = wellKnown({
-  remoteConfig: { url: "https://config.example.com/opencode.json" },
-  remote: "not an object",
-})
-
-invalidRemoteWellKnown.it.instance("wellknown remote_config rejects non-object config responses", () =>
-  Effect.gen(function* () {
-    const exit = yield* Config.use.get().pipe(Effect.exit)
-    expect(invalidRemoteWellKnown.seen.remote).toBe("https://config.example.com/opencode.json")
-    expect(Exit.isFailure(exit)).toBe(true)
-  }),
-)
-
-const loginPageWellKnown = wellKnown({
-  remoteConfig: { url: "https://config.example.com/opencode.json" },
-  remoteHtml: "<!DOCTYPE html><html><head><title>Sign in</title></head><body>Login required</body></html>",
-})
-
-loginPageWellKnown.it.instance(
-  "wellknown remote_config surfaces an actionable auth error when the gateway returns an HTML login page",
-  () =>
-    Effect.gen(function* () {
-      const exit = yield* Config.use.get().pipe(Effect.exit)
-      expect(loginPageWellKnown.seen.remote).toBe("https://config.example.com/opencode.json")
-      expect(Exit.isFailure(exit)).toBe(true)
-      const error = Exit.isFailure(exit) ? Cause.squash(exit.cause) : undefined
-      expect(NamedError.hasName(error, "ConfigRemoteAuthError")).toBe(true)
-      expect((error as { data?: { url?: string } }).data?.url).toBe("https://example.com")
-    }),
 )
 
 describe("resolvePluginSpec", () => {
@@ -2138,7 +1791,7 @@ test("parseManagedPlist strips MDM metadata keys", async () => {
           PayloadUUID: "AAAA-BBBB-CCCC",
           PayloadVersion: 1,
           _manualProfile: true,
-          share: "disabled",
+          logLevel: "DEBUG",
           model: "mdm/model",
         }),
       ),
@@ -2146,7 +1799,7 @@ test("parseManagedPlist strips MDM metadata keys", async () => {
     ),
     "test:mobileconfig",
   )
-  expect(config.share).toBe("disabled")
+  expect(config.logLevel).toBe("DEBUG")
   expect(config.model).toBe("mdm/model")
   // MDM keys must not leak into the parsed config
   expect((config as any).PayloadUUID).toBeUndefined()
@@ -2162,7 +1815,7 @@ test("parseManagedPlist parses server settings", async () => {
         JSON.stringify({
           $schema: "https://opencode.ai/config.json",
           server: { hostname: "127.0.0.1", mdns: false },
-          autoupdate: true,
+          snapshot: true,
         }),
       ),
       "test:mobileconfig",
@@ -2171,7 +1824,7 @@ test("parseManagedPlist parses server settings", async () => {
   )
   expect(config.server?.hostname).toBe("127.0.0.1")
   expect(config.server?.mdns).toBe(false)
-  expect(config.autoupdate).toBe(true)
+  expect(config.snapshot).toBe(true)
 })
 
 test("parseManagedPlist parses permission rules", async () => {
