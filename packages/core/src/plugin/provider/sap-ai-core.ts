@@ -18,7 +18,7 @@ export const SapAICorePlugin = define({
 
         const installedPath = evt.package.startsWith("file://")
           ? evt.package
-          : (yield* npm.add(evt.package).pipe(Effect.orDie)).entrypoint
+          : (yield* npm.add(evt.package, `provider ${evt.model.providerID}`).pipe(Effect.orDie)).entrypoint
         if (!installedPath) throw new Error(`Package ${evt.package} has no import entrypoint`)
 
         const mod = yield* Effect.promise(async () => {

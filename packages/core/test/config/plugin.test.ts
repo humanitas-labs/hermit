@@ -165,7 +165,6 @@ describe("ConfigExternalPlugin", () => {
               entrypoint: path.join(import.meta.dir, "../plugin/fixtures/config-promise-plugin.ts"),
             }
           }),
-        install: () => Effect.void,
         which: () => Effect.succeed(undefined),
       })
 

@@ -71,6 +71,8 @@ The core agent: model interaction, tool calling, shell, filesystem, file editing
 
 Accounts and hosted config, session sharing, the update check and silent self-upgrade, telemetry export, identifying request headers, the startup npm install into your config directory, the OpenCode Zen provider, the web and desktop UIs, and all of the infrastructure, marketing, and release tooling that exists to run OpenCode as a company. Downloads that the agent genuinely needs, such as ripgrep, language servers, and configured plugins, stay on and log their destination before they run.
 
+Hermit never runs an npm install on its own. Packages named under `plugin` in your config, non-bundled provider SDKs, and npm-backed formatters and language servers are installed on first use, and every install logs the package, the registry, and the reason before it runs. Local plugins and custom tools under `.opencode/plugin` and `.opencode/tool` that import runtime values from `@opencode-ai/plugin` (for example `tool()`) need that package resolvable from their directory: run `bun add @opencode-ai/plugin` or `npm install @opencode-ai/plugin` inside the `.opencode` directory or the global config directory. Files that only use `import type` need nothing.
+
 ## 5. Status
 
 The strip and the inference boundary are on `master`. The remaining privacy removals are in review as separate branches, and the rename from `opencode` paths and names to `hermit` comes after that. Until then, a fresh start still contacts the model catalog and the npm registry once. The audit, per-region plans, and a one-page summary of every change live in `.plan/`.

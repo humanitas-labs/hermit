@@ -1880,7 +1880,7 @@ const layer = Layer.effect(
           if (model.api.npm.startsWith("file://")) {
             return model.api.npm
           }
-          const item = await Npm.add(model.api.npm)
+          const item = await Npm.add(model.api.npm, `provider ${model.providerID}`)
           if (!item.entrypoint) throw new Error(`Package ${model.api.npm} has no import entrypoint`)
           return item.entrypoint
         })()

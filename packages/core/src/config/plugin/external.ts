@@ -74,7 +74,7 @@ export const Plugin = define({
         yield* Effect.gen(function* () {
           const entrypoint = path.isAbsolute(ref.package)
             ? pathToFileURL(ref.package).href
-            : (yield* npm.add(ref.package)).entrypoint
+            : (yield* npm.add(ref.package, "config plugin")).entrypoint
           if (!entrypoint) return
 
           const mod = yield* Effect.promise(() => import(entrypoint))

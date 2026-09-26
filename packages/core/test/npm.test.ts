@@ -52,7 +52,7 @@ describe("Npm.add", () => {
 
     const entry = await Effect.gen(function* () {
       const npm = yield* Npm.Service
-      return yield* npm.add(spec)
+      return yield* npm.add(spec, "test")
     }).pipe(Effect.scoped, Effect.provide(npmLayer(path.join(tmp.path, "cache"))), Effect.runPromise)
 
     expect(entry.entrypoint).toBeDefined()
@@ -103,7 +103,7 @@ describe("Npm.add", () => {
           [${JSON.stringify(`dual-provider@file:${dual}`)}, "createDual"],
           [${JSON.stringify(`@fixture/scoped-provider@file:${scoped}`)}, "createScoped"],
         ]) {
-          const result = await Npm.add(spec)
+          const result = await Npm.add(spec, "test")
           assert.ok(result.entrypoint?.startsWith("file://"), "entrypoint is a file URL: " + result.entrypoint)
           const mod = await import(result.entrypoint)
           assert.equal(typeof mod[name], "function", "module exports " + name)
@@ -125,30 +125,4 @@ describe("Npm.add", () => {
     expect(stderr, stdout).toBe("")
     expect(code).toBe(0)
   }, 30_000)
-})
-
-describe("Npm.install", () => {
-  test("respects omit from project .npmrc", async () => {
-    await using tmp = await tmpdir()
-
-    await writePackage(tmp.path, {
-      name: "fixture",
-      dependencies: {
-        "prod-pkg": "file:./prod-pkg",
-      },
-      devDependencies: {
-        "dev-pkg": "file:./dev-pkg",
-      },
-    })
-    await Bun.write(path.join(tmp.path, ".npmrc"), "omit=dev\n")
-    await fs.mkdir(path.join(tmp.path, "prod-pkg"))
-    await fs.mkdir(path.join(tmp.path, "dev-pkg"))
-    await writePackage(path.join(tmp.path, "prod-pkg"), { name: "prod-pkg" })
-    await writePackage(path.join(tmp.path, "dev-pkg"), { name: "dev-pkg" })
-
-    await Npm.install(tmp.path)
-
-    await expect(fs.stat(path.join(tmp.path, "node_modules", "prod-pkg"))).resolves.toBeDefined()
-    await expect(fs.stat(path.join(tmp.path, "node_modules", "dev-pkg"))).rejects.toThrow()
-  })
 })
