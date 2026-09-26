@@ -1,51 +1,128 @@
 {
   "$comment": "Expected destinations per scenario for the egress harness (.plan/11-verification.md). `allow` lists every destination a run may attempt; anything else fails. `require` lists destinations that must appear. Patterns match on the fields they name; `host` and `path` accept `*` globs. Layers: inference (fake model servers), proxy (recording proxy: `connect` is a CONNECT attempt, `request` a plain request), dns (Linux resolver log), sink (Linux any-IP sink), sandbox (macOS sandbox denials; the kernel masks the address but keeps port and process). These encode the acceptance contract, not the current binary, so a baseline run is expected to fail where the audit says so.",
+  "always": [
+    {
+      "$comment": "The models.dev catalog refresh, once per start, kept by decision (plan 01). It carries no user context and the boundary check governs whatever it yields.",
+      "layer": "proxy",
+      "kind": "connect",
+      "host": "models.opencode.ai",
+      "port": 443
+    }
+  ],
   "scenarios": {
     "S0": {
       "description": "Bypass fixture: a raw connect to 192.0.2.1:443 that ignores the proxy. The namespace layer must record it or the harness is blind: on Linux the sink sees 192.0.2.1:443, on macOS the sandbox kills the fixture.",
       "allow": [
-        { "layer": "sandbox", "kind": "deny" },
-        { "layer": "sink", "port": 443 }
+        {
+          "layer": "sandbox",
+          "kind": "deny"
+        },
+        {
+          "layer": "sink",
+          "port": 443
+        }
       ],
       "requireAny": [
-        { "layer": "sandbox", "kind": "deny" },
-        { "layer": "sink", "host": "192.0.2.1", "port": 443 }
+        {
+          "layer": "sandbox",
+          "kind": "deny"
+        },
+        {
+          "layer": "sink",
+          "host": "192.0.2.1",
+          "port": 443
+        }
       ]
     },
     "S1": {
       "description": "Local session under preset private: only the loopback provider, no DNS, nothing else.",
-      "allow": [{ "layer": "inference", "host": "127.0.0.1" }],
+      "allow": [
+        {
+          "layer": "inference",
+          "host": "127.0.0.1"
+        }
+      ],
       "require": [
-        { "layer": "inference", "kind": "primary", "host": "127.0.0.1" },
-        { "layer": "inference", "kind": "title", "host": "127.0.0.1" }
+        {
+          "layer": "inference",
+          "kind": "primary",
+          "host": "127.0.0.1"
+        },
+        {
+          "layer": "inference",
+          "kind": "title",
+          "host": "127.0.0.1"
+        }
       ]
     },
     "S2": {
       "description": "S1 plus one scripted webfetch to a second loopback server; the fetch is the only non-inference traffic.",
       "allow": [
-        { "layer": "inference", "host": "127.0.0.1" },
-        { "layer": "proxy", "kind": "request", "host": "127.0.0.1", "path": "/tool-target" }
+        {
+          "layer": "inference",
+          "host": "127.0.0.1"
+        },
+        {
+          "layer": "proxy",
+          "kind": "request",
+          "host": "127.0.0.1",
+          "path": "/tool-target"
+        }
       ],
       "require": [
-        { "layer": "inference", "kind": "primary", "host": "127.0.0.1" },
-        { "layer": "proxy", "kind": "request", "host": "127.0.0.1", "path": "/tool-target" }
+        {
+          "layer": "inference",
+          "kind": "primary",
+          "host": "127.0.0.1"
+        },
+        {
+          "layer": "proxy",
+          "kind": "request",
+          "host": "127.0.0.1",
+          "path": "/tool-target"
+        }
       ]
     },
     "S3": {
       "description": "Local model drops the connection mid-stream and stays down; retries hit loopback only.",
-      "allow": [{ "layer": "inference", "host": "127.0.0.1" }],
-      "require": [{ "layer": "inference", "kind": "primary", "host": "127.0.0.1" }]
+      "allow": [
+        {
+          "layer": "inference",
+          "host": "127.0.0.1"
+        }
+      ],
+      "require": [
+        {
+          "layer": "inference",
+          "kind": "primary",
+          "host": "127.0.0.1"
+        }
+      ]
     },
     "S4": {
       "description": "Third-party session under preset external: only api.fireworks.ai (served by the fake TLS server through the proxy MITM route).",
       "allow": [
-        { "layer": "proxy", "kind": "connect", "host": "api.fireworks.ai", "port": 443 },
-        { "layer": "inference", "host": "api.fireworks.ai" }
+        {
+          "layer": "proxy",
+          "kind": "connect",
+          "host": "api.fireworks.ai",
+          "port": 443
+        },
+        {
+          "layer": "inference",
+          "host": "api.fireworks.ai"
+        }
       ],
-      "require": [{ "layer": "inference", "kind": "primary", "host": "api.fireworks.ai" }]
+      "require": [
+        {
+          "layer": "inference",
+          "kind": "primary",
+          "host": "api.fireworks.ai"
+        }
+      ]
     },
     "S5": {
-      "description": "Preset private with a third-party provider enabled: startup error, no requests at all.",
+      "description": "Preset private with a third-party provider also configured: the local model works, and choosing the third-party model is refused before any request, with an error naming the destination. No inference requests at all.",
       "allow": []
     },
     "S6": {
@@ -54,29 +131,87 @@
     },
     "S7": {
       "description": "Title, compaction, subagent, and agent generation all go to the loopback endpoint.",
-      "allow": [{ "layer": "inference", "host": "127.0.0.1" }],
+      "allow": [
+        {
+          "layer": "inference",
+          "host": "127.0.0.1"
+        }
+      ],
       "require": [
-        { "layer": "inference", "kind": "primary", "host": "127.0.0.1" },
-        { "layer": "inference", "kind": "title", "host": "127.0.0.1" },
-        { "layer": "inference", "kind": "compaction", "host": "127.0.0.1" },
-        { "layer": "inference", "kind": "subagent", "host": "127.0.0.1" },
-        { "layer": "inference", "kind": "generate", "host": "127.0.0.1" }
+        {
+          "layer": "inference",
+          "kind": "primary",
+          "host": "127.0.0.1"
+        },
+        {
+          "layer": "inference",
+          "kind": "title",
+          "host": "127.0.0.1"
+        },
+        {
+          "layer": "inference",
+          "kind": "compaction",
+          "host": "127.0.0.1"
+        },
+        {
+          "layer": "inference",
+          "kind": "subagent",
+          "host": "127.0.0.1"
+        },
+        {
+          "layer": "inference",
+          "kind": "generate",
+          "host": "127.0.0.1"
+        }
       ]
     },
     "S8a": {
       "description": "small_model points at a third-party provider: the secondary call is rejected, the primary session continues on loopback.",
-      "allow": [{ "layer": "inference", "host": "127.0.0.1" }],
-      "require": [{ "layer": "inference", "kind": "primary", "host": "127.0.0.1" }]
+      "allow": [
+        {
+          "layer": "inference",
+          "host": "127.0.0.1"
+        }
+      ],
+      "require": [
+        {
+          "layer": "inference",
+          "kind": "primary",
+          "host": "127.0.0.1"
+        }
+      ]
     },
     "S8b": {
       "description": "A plugin small-model hook returns a third-party model: same expectation as S8a.",
-      "allow": [{ "layer": "inference", "host": "127.0.0.1" }],
-      "require": [{ "layer": "inference", "kind": "primary", "host": "127.0.0.1" }]
+      "allow": [
+        {
+          "layer": "inference",
+          "host": "127.0.0.1"
+        }
+      ],
+      "require": [
+        {
+          "layer": "inference",
+          "kind": "primary",
+          "host": "127.0.0.1"
+        }
+      ]
     },
     "S9": {
       "description": "Project opencode.json tries to raise the preset, add a remote provider, mark it user-owned, and route small_model to it: ignored, loopback only.",
-      "allow": [{ "layer": "inference", "host": "127.0.0.1" }],
-      "require": [{ "layer": "inference", "kind": "primary", "host": "127.0.0.1" }]
+      "allow": [
+        {
+          "layer": "inference",
+          "host": "127.0.0.1"
+        }
+      ],
+      "require": [
+        {
+          "layer": "inference",
+          "kind": "primary",
+          "host": "127.0.0.1"
+        }
+      ]
     },
     "S10": {
       "description": "Remote endpoint labelled local by config: classified USER, rejected under private, never contacted.",
@@ -88,46 +223,130 @@
     },
     "S12": {
       "description": "Loopback server answers 307 to a second host: the request fails and the second host is never contacted.",
-      "allow": [{ "layer": "inference", "host": "127.0.0.1" }],
-      "require": [{ "layer": "inference", "kind": "primary", "host": "127.0.0.1" }]
+      "allow": [
+        {
+          "layer": "inference",
+          "host": "127.0.0.1"
+        }
+      ],
+      "require": [
+        {
+          "layer": "inference",
+          "kind": "primary",
+          "host": "127.0.0.1"
+        }
+      ]
     },
     "S13": {
       "description": "A Fireworks key in the isolated auth file: startup succeeds, Fireworks is never contacted.",
-      "allow": [{ "layer": "inference", "host": "127.0.0.1" }],
-      "require": [{ "layer": "inference", "kind": "primary", "host": "127.0.0.1" }]
+      "allow": [
+        {
+          "layer": "inference",
+          "host": "127.0.0.1"
+        }
+      ],
+      "require": [
+        {
+          "layer": "inference",
+          "kind": "primary",
+          "host": "127.0.0.1"
+        }
+      ]
     },
     "S14a": {
       "description": "TypeScript file opened with empty caches and OPENCODE_DISABLE_LSP_DOWNLOAD set: no download attempt.",
-      "allow": [{ "layer": "inference", "host": "127.0.0.1" }],
-      "require": [{ "layer": "inference", "kind": "primary", "host": "127.0.0.1" }]
+      "allow": [
+        {
+          "layer": "inference",
+          "host": "127.0.0.1"
+        }
+      ],
+      "require": [
+        {
+          "layer": "inference",
+          "kind": "primary",
+          "host": "127.0.0.1"
+        }
+      ]
     },
     "S14b": {
       "description": "Same without the flag: the language-server download attempt to the npm registry is expected and logged; it carries no context markers.",
       "allow": [
-        { "layer": "inference", "host": "127.0.0.1" },
-        { "layer": "proxy", "kind": "connect", "host": "registry.npmjs.org", "port": 443 }
+        {
+          "layer": "inference",
+          "host": "127.0.0.1"
+        },
+        {
+          "layer": "proxy",
+          "kind": "connect",
+          "host": "registry.npmjs.org",
+          "port": 443
+        }
       ],
       "require": [
-        { "layer": "inference", "kind": "primary", "host": "127.0.0.1" },
-        { "layer": "proxy", "kind": "connect", "host": "registry.npmjs.org", "port": 443 }
+        {
+          "layer": "inference",
+          "kind": "primary",
+          "host": "127.0.0.1"
+        },
+        {
+          "layer": "proxy",
+          "kind": "connect",
+          "host": "registry.npmjs.org",
+          "port": 443
+        }
       ]
     },
     "S15a": {
       "description": "S1 on the native @opencode-ai/llm runtime (OPENCODE_EXPERIMENTAL_NATIVE_LLM).",
-      "allow": [{ "layer": "inference", "host": "127.0.0.1" }],
+      "allow": [
+        {
+          "layer": "inference",
+          "host": "127.0.0.1"
+        }
+      ],
       "require": [
-        { "layer": "inference", "kind": "primary", "host": "127.0.0.1" },
-        { "layer": "inference", "kind": "title", "host": "127.0.0.1" }
+        {
+          "layer": "inference",
+          "kind": "primary",
+          "host": "127.0.0.1"
+        },
+        {
+          "layer": "inference",
+          "kind": "title",
+          "host": "127.0.0.1"
+        }
       ]
     },
     "S15b": {
       "description": "S7 (without agent generation) on the native runtime.",
-      "allow": [{ "layer": "inference", "host": "127.0.0.1" }],
+      "allow": [
+        {
+          "layer": "inference",
+          "host": "127.0.0.1"
+        }
+      ],
       "require": [
-        { "layer": "inference", "kind": "primary", "host": "127.0.0.1" },
-        { "layer": "inference", "kind": "title", "host": "127.0.0.1" },
-        { "layer": "inference", "kind": "compaction", "host": "127.0.0.1" },
-        { "layer": "inference", "kind": "subagent", "host": "127.0.0.1" }
+        {
+          "layer": "inference",
+          "kind": "primary",
+          "host": "127.0.0.1"
+        },
+        {
+          "layer": "inference",
+          "kind": "title",
+          "host": "127.0.0.1"
+        },
+        {
+          "layer": "inference",
+          "kind": "compaction",
+          "host": "127.0.0.1"
+        },
+        {
+          "layer": "inference",
+          "kind": "subagent",
+          "host": "127.0.0.1"
+        }
       ]
     }
   }

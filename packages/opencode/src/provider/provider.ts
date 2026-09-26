@@ -1643,8 +1643,8 @@ const layer = Layer.effect(
         const policy = HermitPolicy.fromConfig(cfg)
         for (const provider of Object.values(providers)) {
           for (const model of Object.values(provider.models)) {
-            // Mirrors resolveSDK, which reads baseURL from provider options only; per-model baseURL is not applied upstream.
-            const url = endpoint(model, provider.options, varsLoaders[provider.id], envs)
+            // Mirrors resolveSDK: provider options plus a per-model baseURL when one is set.
+            const url = endpoint(model, { ...provider.options, ...modelEndpoint(model) }, varsLoaders[provider.id], envs)
             model.boundary = url && URL.canParse(url) ? HermitPolicy.classify(new URL(url), policy) : "third-party"
             model.permitted = HermitPolicy.permits(policy.preset, model.boundary)
           }
@@ -1675,6 +1675,11 @@ const layer = Layer.effect(
 
     // Effective base URL for a model: config `baseURL` wins over the catalog URL,
     // then provider vars and environment placeholders are substituted.
+    function modelEndpoint(model: Model): Record<string, any> {
+      const raw = model.options?.["baseURL"]
+      return typeof raw === "string" && raw !== "" ? { baseURL: raw } : {}
+    }
+
     function endpoint(
       model: Model,
       options: Record<string, any>,
@@ -1695,7 +1700,9 @@ const layer = Layer.effect(
     async function resolveSDK(model: Model, s: State, envs: Record<string, string | undefined>) {
       try {
         const provider = s.providers[model.providerID]
-        const options = { ...provider.options }
+        // Hermit: a per-model baseURL is honored rather than silently ignored, so the request goes
+        // where the config says and the boundary check sees the same URL.
+        const options = { ...provider.options, ...modelEndpoint(model) }
 
         if (
           model.providerID === "google-vertex" &&

@@ -692,7 +692,13 @@ export const RunCommand = effectCmd({
               toggles.get("start") !== true
             ) {
               UI.empty()
-              UI.println(`> ${event.properties.info.agent} · ${event.properties.info.modelID}`)
+              const info = event.properties.info
+              const boundary = await sdk.config
+                .providers({}, { throwOnError: true })
+                .then((x) => x.data?.providers.find((p) => p.id === info.providerID)?.models[info.modelID]?.boundary)
+                .catch(() => undefined)
+              const label = boundary === "third-party" ? "THIRD PARTY" : boundary?.toUpperCase()
+              UI.println(`> ${info.agent} · ${info.modelID}${label ? ` · ${label}` : ""}`)
               UI.empty()
               toggles.set("start", true)
             }

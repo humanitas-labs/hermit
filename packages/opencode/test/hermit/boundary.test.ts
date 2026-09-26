@@ -254,3 +254,35 @@ it.live("openrouter requests ask for zero data retention endpoints by default", 
     },
   ),
 )
+
+it.live("a per-model baseURL is classified on its own and refused under private", () =>
+  provideTmpdirInstance(
+    () =>
+      Effect.gen(function* () {
+        const provider = yield* Provider.Service
+        const model = yield* provider.getModel(TEST, ModelV2.ID.make("drift"))
+        expect(model.boundary).toBe("third-party")
+        expect(model.permitted).toBe(false)
+        const result = streamText({
+          model: yield* provider.getLanguage(model),
+          onError() {},
+          messages: [{ role: "user", content: "hello" }],
+        })
+        const errors = yield* Effect.promise(async () => {
+          const errors: unknown[] = []
+          for await (const part of result.fullStream) if (part.type === "error") errors.push(part.error)
+          return errors
+        })
+        expect(errors[0]).toBeInstanceOf(HermitPolicy.DestinationError)
+        expect(hits).toEqual([])
+      }),
+    {
+      config: (() => {
+        const base = testProviderConfig(local)
+        const models: Record<string, unknown> = base.provider.test.models
+        models["drift"] = { ...base.provider.test.models["test-model"], id: "drift", options: { baseURL: remote } }
+        return base
+      })(),
+    },
+  ),
+)

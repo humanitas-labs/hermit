@@ -317,9 +317,9 @@ const scenarios: Scenario[] = [
     baseline: "fail",
     config: (ctx) => ({ ...base, provider: { ...localProvider(ctx), ...remoteProvider() } }),
     script: () => hello,
-    commands: (ctx) => [run(ctx)],
+    commands: (ctx) => [run(ctx, "remote/fake-remote")],
     exit: "nonzero",
-    output: /remote/,
+    output: /does not permit/,
   },
   {
     id: "S6",
@@ -483,7 +483,7 @@ const scenarios: Scenario[] = [
     id: "S14b",
     title: "tooling downloads (flag unset)",
     baseline: "pass",
-    config: (ctx) => ({ ...base, provider: localProvider(ctx) }),
+    config: (ctx) => ({ ...base, lsp: true, provider: localProvider(ctx) }),
     files: tsProject,
     script: (ctx) => readThenHello(ctx, "src/index.ts"),
     commands: (ctx) => [run(ctx)],
@@ -725,8 +725,9 @@ function evaluate(result: RunResult): Verdict {
   )[result.scenario.id]
   const violations: string[] = []
   if (!rules) return { violations: [`no allowlist entry for ${result.scenario.id}`], destinations: [] }
+  const allow = [...(allowlist.always as Pattern[]), ...rules.allow]
   result.destinations
-    .filter((entry) => !rules.allow.some((pattern) => matches(pattern, entry)))
+    .filter((entry) => !allow.some((pattern) => matches(pattern, entry)))
     .forEach((entry) => violations.push(`unexpected destination: ${describe(entry)}`))
   ;(rules.require ?? [])
     .filter((pattern) => !result.destinations.some((entry) => matches(pattern, entry)))
