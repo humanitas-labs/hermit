@@ -1486,6 +1486,27 @@ function AssistantMessage(props: { message: AssistantMessage; parts: Part[]; las
     return props.message.time.completed - user.time.created
   })
 
+  // Nothing has streamed back yet. Local models spend this time loading weights and reading the
+  // prompt, which can run past a minute, so show that the turn is alive rather than a bare footer.
+  const boundary = createMemo(
+    () => Model.get(ctx.providers(), props.message.providerID, props.message.modelID)?.boundary,
+  )
+  const waiting = createMemo(
+    () =>
+      boundary() === "local" &&
+      props.last &&
+      props.parts.length === 0 &&
+      !props.message.time.completed &&
+      !props.message.error,
+  )
+  const [now, setNow] = createSignal(Date.now())
+  createEffect(() => {
+    if (!waiting()) return
+    const timer = setInterval(() => setNow(Date.now()), 1000)
+    onCleanup(() => clearInterval(timer))
+  })
+  const waited = createMemo(() => Math.max(0, now() - props.message.time.created))
+
   const childShortcut = useCommandShortcut("session.child.first")
   const backgroundShortcut = useCommandShortcut("session.background")
 
@@ -1546,6 +1567,22 @@ function AssistantMessage(props: { message: AssistantMessage; parts: Part[]; las
         </box>
       </Show>
       <Switch>
+        <Match when={waiting()}>
+          <box ref={(el: BoxRenderable) => alwaysSeparate.add(el)} paddingLeft={3} marginTop={1}>
+            <Spinner color={local.agent.color(props.message.agent)}>
+              <span style={{ fg: theme.text }}>Loading {model()}</span>
+              <span style={{ fg: theme.textMuted }}> · </span>
+              <span style={{ fg: theme.success }}>LOCAL</span>
+              <span style={{ fg: theme.textMuted }}> · {Locale.duration(waited())}</span>
+            </Spinner>
+            <Show when={waited() > 15000}>
+              <text fg={theme.textMuted}>
+                Still loading. A local server has to load the model weights and read the whole prompt before
+                it can answer, so a cold start can take a minute or more.
+              </text>
+            </Show>
+          </box>
+        </Match>
         <Match when={props.last || final() || props.message.error?.name === "MessageAbortedError"}>
           <box ref={(el: BoxRenderable) => alwaysSeparate.add(el)} paddingLeft={3}>
             <text marginTop={1}>
