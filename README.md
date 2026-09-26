@@ -14,11 +14,11 @@ Coding agents see everything: your source, your shell, your notes. Most of them 
 
 Every model request is classified by the address it is about to hit:
 
-| Class | Meaning | Shown as |
-| --- | --- | --- |
-| local | a literal loopback address, such as `127.0.0.1` or `localhost` | LOCAL, green |
-| user | a remote endpoint you marked as yours in your own config | USER, yellow |
-| third party | anything else, including cloud providers you have keys for | THIRD PARTY, red |
+| Class       | Meaning                                                        | Shown as         |
+| ----------- | -------------------------------------------------------------- | ---------------- |
+| local       | a literal loopback address, such as `127.0.0.1` or `localhost` | LOCAL, green     |
+| user        | a remote endpoint you marked as yours in your own config       | USER, yellow     |
+| third party | anything else, including cloud providers you have keys for     | THIRD PARTY, red |
 
 A preset in your user config says which classes are allowed. `private` is the default and allows only local. `trusted` adds user. `external` adds third party. Anything outside the preset is refused with an error that names the destination. There is no fallback to another model or endpoint, and titles, compaction, and subagents follow the same rule as your main conversation. A project's config can make the preset stricter but can never loosen it.
 

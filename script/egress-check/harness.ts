@@ -250,7 +250,8 @@ const tsProject = (ctx: Ctx) => ({
   "package-lock.json": JSON.stringify({ name: "egress-fixture", lockfileVersion: 3 }),
   "src/index.ts": `export const marker = "${ctx.markers.file}"\n`,
   "node_modules/typescript/package.json": JSON.stringify({ name: "typescript", version: "0.0.0-stub" }),
-  "node_modules/typescript/lib/tsserver.js": "// stub so the TypeScript LSP entry resolves and asks for typescript-language-server\n",
+  "node_modules/typescript/lib/tsserver.js":
+    "// stub so the TypeScript LSP entry resolves and asks for typescript-language-server\n",
 })
 
 const scenarios: Scenario[] = [
@@ -337,11 +338,20 @@ const scenarios: Scenario[] = [
     files: (ctx) => ({ "notes.txt": `notes ${ctx.markers.file}\n` }),
     script: (ctx) => ({
       primary: [
-        { type: "tool", name: "read", args: { filePath: path.join(ctx.project, "notes.txt") }, usage: { input: 2500, output: 100 } },
+        {
+          type: "tool",
+          name: "read",
+          args: { filePath: path.join(ctx.project, "notes.txt") },
+          usage: { input: 2500, output: 100 },
+        },
         {
           type: "tool",
           name: "task",
-          args: { description: "egress subtask", prompt: `Reply done. ${ctx.markers.subagent}`, subagent_type: "general" },
+          args: {
+            description: "egress subtask",
+            prompt: `Reply done. ${ctx.markers.subagent}`,
+            subagent_type: "general",
+          },
         },
         { type: "text", text: "Done." },
       ],
@@ -441,7 +451,9 @@ const scenarios: Scenario[] = [
     title: "redirect",
     baseline: "fail",
     config: (ctx) => ({ ...base, provider: localProvider(ctx) }),
-    script: () => ({ primary: [{ type: "redirect", location: "http://redirect.example.test:8080/v1/chat/completions" }] }),
+    script: () => ({
+      primary: [{ type: "redirect", location: "http://redirect.example.test:8080/v1/chat/completions" }],
+    }),
     commands: (ctx) => [run(ctx)],
     timeout: 150_000,
     exit: "nonzero",
@@ -496,11 +508,20 @@ const scenarios: Scenario[] = [
     files: (ctx) => ({ "notes.txt": `notes ${ctx.markers.file}\n` }),
     script: (ctx) => ({
       primary: [
-        { type: "tool", name: "read", args: { filePath: path.join(ctx.project, "notes.txt") }, usage: { input: 2500, output: 100 } },
+        {
+          type: "tool",
+          name: "read",
+          args: { filePath: path.join(ctx.project, "notes.txt") },
+          usage: { input: 2500, output: 100 },
+        },
         {
           type: "tool",
           name: "task",
-          args: { description: "egress subtask", prompt: `Reply done. ${ctx.markers.subagent}`, subagent_type: "general" },
+          args: {
+            description: "egress subtask",
+            prompt: `Reply done. ${ctx.markers.subagent}`,
+            subagent_type: "general",
+          },
         },
         { type: "text", text: "Done." },
       ],
@@ -600,7 +621,8 @@ async function execute(scenario: Scenario, cache: Cache, servers: Omit<Servers, 
   const ctx: Ctx = { ...partial, local: { url: local.url, port: local.port } }
 
   writeFileSync(path.join(home, ".config/opencode/opencode.json"), JSON.stringify(scenario.config(ctx), null, 2))
-  if (scenario.project) writeFileSync(path.join(project, "opencode.json"), JSON.stringify(scenario.project(ctx), null, 2))
+  if (scenario.project)
+    writeFileSync(path.join(project, "opencode.json"), JSON.stringify(scenario.project(ctx), null, 2))
   if (scenario.auth) writeFileSync(path.join(home, ".local/share/opencode/auth.json"), JSON.stringify(scenario.auth))
   Object.entries(scenario.files?.(ctx) ?? {}).forEach(([file, text]) => {
     const target = path.join(project, file)
@@ -628,7 +650,13 @@ async function execute(scenario: Scenario, cache: Cache, servers: Omit<Servers, 
         process: path.basename(command[0] ?? ""),
         note: SANDBOX_KILLED,
       })
-    chunks.push(`$ ${command.map((a) => (a === ctx.binary ? "opencode" : a)).join(" ")}\n`, result.stdout, "\n--- stderr\n", result.stderr, "\n")
+    chunks.push(
+      `$ ${command.map((a) => (a === ctx.binary ? "opencode" : a)).join(" ")}\n`,
+      result.stdout,
+      "\n--- stderr\n",
+      result.stderr,
+      "\n",
+    )
   }
   const end = new Date()
   local.stop()
@@ -664,7 +692,14 @@ async function execute(scenario: Scenario, cache: Cache, servers: Omit<Servers, 
 type Pattern = { layer?: string; kind?: string; host?: string; port?: number; path?: string; process?: string }
 
 function glob(pattern: string, value: string) {
-  const re = new RegExp("^" + pattern.split("*").map((part) => part.replace(/[.+?^${}()|[\]\\]/g, "\\$&")).join(".*") + "$")
+  const re = new RegExp(
+    "^" +
+      pattern
+        .split("*")
+        .map((part) => part.replace(/[.+?^${}()|[\]\\]/g, "\\$&"))
+        .join(".*") +
+      "$",
+  )
   return re.test(value)
 }
 
@@ -696,7 +731,10 @@ function evaluate(result: RunResult): Verdict {
   ;(rules.require ?? [])
     .filter((pattern) => !result.destinations.some((entry) => matches(pattern, entry)))
     .forEach((pattern) => violations.push(`missing expected destination: ${JSON.stringify(pattern)}`))
-  if (rules.requireAny && !rules.requireAny.some((pattern) => result.destinations.some((entry) => matches(pattern, entry))))
+  if (
+    rules.requireAny &&
+    !rules.requireAny.some((pattern) => result.destinations.some((entry) => matches(pattern, entry)))
+  )
     violations.push(`none of the expected destinations appeared: ${JSON.stringify(rules.requireAny)}`)
   result.destinations
     .filter((entry) => entry.layer !== "inference" && (entry.markers?.length ?? 0) > 0)
@@ -724,7 +762,9 @@ for (const scenario of selected) {
     process.stdout.write(`${scenario.id} ${cache} (${scenario.title}) ... `)
     const result = await execute(scenario, cache, servers)
     results.push(result)
-    console.log(`exit ${result.exitCodes.join(",")} in ${((result.end.getTime() - result.start.getTime()) / 1000).toFixed(1)}s`)
+    console.log(
+      `exit ${result.exitCodes.join(",")} in ${((result.end.getTime() - result.start.getTime()) / 1000).toFixed(1)}s`,
+    )
   }
 }
 

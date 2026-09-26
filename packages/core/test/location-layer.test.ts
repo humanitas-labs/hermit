@@ -115,7 +115,6 @@ describe("LocationServiceMap", () => {
             "skill",
             "todowrite",
             "webfetch",
-            "websearch",
             "write",
           ])
           const allowedState = yield* update(allowed.path)
@@ -132,7 +131,6 @@ describe("LocationServiceMap", () => {
             "skill",
             "todowrite",
             "webfetch",
-            "websearch",
             "write",
           ])
         }),

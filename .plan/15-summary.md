@@ -44,12 +44,12 @@ No product code. A fake OpenAI-compatible loopback server, a recording proxy wit
 
 ## 4. Decisions reversed after review
 
-| Item | First landed as | Now | Reason |
-| --- | --- | --- | --- |
-| ripgrep (07) | bundled into the binary at build time | upstream download, logged | trusted source; build divergence outweighed the gain |
-| model catalog (01) | frozen build-time snapshot | upstream runtime fetch, logged, once per start | catalog data is not user context; the boundary check governs the destinations it yields |
-| name-based `opencode*` provider drop (01) | planned | not implemented | classifies by provider id, which the boundary forbids; replaced by a data filter on the fetch result |
-| egress-check workflow (11) | added | to be removed | source-built tool; `run.sh` is enough |
+| Item                                      | First landed as                       | Now                                            | Reason                                                                                               |
+| ----------------------------------------- | ------------------------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| ripgrep (07)                              | bundled into the binary at build time | upstream download, logged                      | trusted source; build divergence outweighed the gain                                                 |
+| model catalog (01)                        | frozen build-time snapshot            | upstream runtime fetch, logged, once per start | catalog data is not user context; the boundary check governs the destinations it yields              |
+| name-based `opencode*` provider drop (01) | planned                               | not implemented                                | classifies by provider id, which the boundary forbids; replaced by a data filter on the fetch result |
+| egress-check workflow (11)                | added                                 | to be removed                                  | source-built tool; `run.sh` is enough                                                                |
 
 ## 5. Softenings recommended by the proportionality review, pending your go
 

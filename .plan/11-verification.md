@@ -63,35 +63,35 @@ For users who want the model-context guarantee enforced outside the application,
 
 ## 5. Divergence log
 
-| Upstream file | Change | Reason |
-|---|---|---|
-| none | The harness is additive (`script/egress-check/`, `docs/strict-deployment.md`). No file under `packages/` was changed. | |
+| Upstream file | Change                                                                                                                | Reason |
+| ------------- | --------------------------------------------------------------------------------------------------------------------- | ------ |
+| none          | The harness is additive (`script/egress-check/`, `docs/strict-deployment.md`). No file under `packages/` was changed. |        |
 
 ## 6. Baseline
 
 Recorded 2026-09-25 against the stripped, otherwise unmodified binary at `785fed388e` (built as `0.0.0-egress`), on macOS 26.6 arm64 with `sandbox-exec` isolation, by `script/egress-check/run.sh`. 37 runs: S0 passed, 36 failed. Cold and warm results were identical for every scenario, so each row below covers both. "Expected" is the audit's prediction for the unmodified binary. Every `run` and TUI invocation attempted `models.opencode.ai:443` (catalog refresh, plan `01`) and `registry.npmjs.org:443` (`@opencode-ai/plugin` bootstrap install, plan `05`); those two are abbreviated as "catalog, npm" below and are the sole failure cause wherever nothing else is listed.
 
-| Scenario | Expected | Observed | Destinations and findings |
-|---|---|---|---|
-| S0 bypass fixture | pass | pass | raw connect to 192.0.2.1:443 killed by the sandbox and recorded; the OS layer is live |
-| S1 local session | fail | fail | loopback primary and title; catalog, npm |
-| S2 tools | pass | fail | S1 plus the scripted `webfetch` to the loopback tool target, attributed to the tool call in the JSON event stream; catalog, npm |
-| S3 local model down | pass | fail | loopback attempts only through five retries (65 s), session reports `APIError`, exit 1; catalog, npm |
-| S4 third-party session | fail | fail | primary and title to `api.fireworks.ai` only, no other remote host; `x-session-id` and `x-session-affinity` headers carry the session ID to the remote endpoint (plan `09`); no `THIRD PARTY` label in output (plan `10` 3.3); catalog, npm |
-| S5 preset conflict | fail | fail | `hermit.preset` is unknown to the binary: normal session on loopback, exit 0, no error naming the remote provider; catalog, npm |
-| S6 background quiet | fail | fail | TUI idle 90 s: catalog, npm; no update-check destination observed |
-| S7 secondary calls | pass | fail | title, compaction, subagent, and agent generation all reached loopback; catalog, npm (twice, once per command) |
-| S8a `small_model` remote | fail | fail | title generation went to `api.fireworks.ai` while the primary turn stayed on loopback; session headers sent; catalog, npm |
-| S8b plugin small-model hook | fail | fail | same as S8a via `experimental.provider.small_model`; catalog, npm |
-| S9 project weakening | fail | fail | project `opencode.json` `small_model` was honored: title to `api.fireworks.ai`; project `hermit.preset` and `owner` ignored only because the keys do not exist yet; catalog, npm |
-| S10 false local | fail | fail | primary and title to `api.fireworks.ai`, exit 0; catalog, npm |
-| S11 endpoint drift | fail | fail | per-model `options.baseURL` was not applied (both requests hit the provider-level loopback URL), so the drift was silently ignored rather than rejected; exit 0; catalog, npm |
-| S12 redirect | fail | fail | on the loopback 307 the binary followed the redirect to `redirect.example.test` (system resolver lookup, killed by the sandbox); catalog, npm |
-| S13 idle credentials | pass | fail | Fireworks never contacted, startup fine; catalog, npm |
-| S14a LSP download disabled | pass | fail | no language-server download; catalog, npm |
-| S14b LSP download enabled | pass | fail | the required `registry.npmjs.org` attempt appeared, but the harness cannot separate the `typescript-language-server` fetch from the plugin bootstrap fetch at baseline; no context markers in non-inference traffic; catalog |
-| S15a native runtime local | fail | fail | as S1 on `OPENCODE_EXPERIMENTAL_NATIVE_LLM`; catalog, npm |
-| S15b native runtime secondary | pass | fail | title, compaction, subagent on loopback; catalog, npm |
+| Scenario                      | Expected | Observed | Destinations and findings                                                                                                                                                                                                                   |
+| ----------------------------- | -------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| S0 bypass fixture             | pass     | pass     | raw connect to 192.0.2.1:443 killed by the sandbox and recorded; the OS layer is live                                                                                                                                                       |
+| S1 local session              | fail     | fail     | loopback primary and title; catalog, npm                                                                                                                                                                                                    |
+| S2 tools                      | pass     | fail     | S1 plus the scripted `webfetch` to the loopback tool target, attributed to the tool call in the JSON event stream; catalog, npm                                                                                                             |
+| S3 local model down           | pass     | fail     | loopback attempts only through five retries (65 s), session reports `APIError`, exit 1; catalog, npm                                                                                                                                        |
+| S4 third-party session        | fail     | fail     | primary and title to `api.fireworks.ai` only, no other remote host; `x-session-id` and `x-session-affinity` headers carry the session ID to the remote endpoint (plan `09`); no `THIRD PARTY` label in output (plan `10` 3.3); catalog, npm |
+| S5 preset conflict            | fail     | fail     | `hermit.preset` is unknown to the binary: normal session on loopback, exit 0, no error naming the remote provider; catalog, npm                                                                                                             |
+| S6 background quiet           | fail     | fail     | TUI idle 90 s: catalog, npm; no update-check destination observed                                                                                                                                                                           |
+| S7 secondary calls            | pass     | fail     | title, compaction, subagent, and agent generation all reached loopback; catalog, npm (twice, once per command)                                                                                                                              |
+| S8a `small_model` remote      | fail     | fail     | title generation went to `api.fireworks.ai` while the primary turn stayed on loopback; session headers sent; catalog, npm                                                                                                                   |
+| S8b plugin small-model hook   | fail     | fail     | same as S8a via `experimental.provider.small_model`; catalog, npm                                                                                                                                                                           |
+| S9 project weakening          | fail     | fail     | project `opencode.json` `small_model` was honored: title to `api.fireworks.ai`; project `hermit.preset` and `owner` ignored only because the keys do not exist yet; catalog, npm                                                            |
+| S10 false local               | fail     | fail     | primary and title to `api.fireworks.ai`, exit 0; catalog, npm                                                                                                                                                                               |
+| S11 endpoint drift            | fail     | fail     | per-model `options.baseURL` was not applied (both requests hit the provider-level loopback URL), so the drift was silently ignored rather than rejected; exit 0; catalog, npm                                                               |
+| S12 redirect                  | fail     | fail     | on the loopback 307 the binary followed the redirect to `redirect.example.test` (system resolver lookup, killed by the sandbox); catalog, npm                                                                                               |
+| S13 idle credentials          | pass     | fail     | Fireworks never contacted, startup fine; catalog, npm                                                                                                                                                                                       |
+| S14a LSP download disabled    | pass     | fail     | no language-server download; catalog, npm                                                                                                                                                                                                   |
+| S14b LSP download enabled     | pass     | fail     | the required `registry.npmjs.org` attempt appeared, but the harness cannot separate the `typescript-language-server` fetch from the plugin bootstrap fetch at baseline; no context markers in non-inference traffic; catalog                |
+| S15a native runtime local     | fail     | fail     | as S1 on `OPENCODE_EXPERIMENTAL_NATIVE_LLM`; catalog, npm                                                                                                                                                                                   |
+| S15b native runtime secondary | pass     | fail     | title, compaction, subagent on loopback; catalog, npm                                                                                                                                                                                       |
 
 Rows the audit predicted as passing fail only because of the catalog and npm attempts; once plans `01` and `05` land they should pass without changes to the harness. S4, S8, S9, S10, S11, S12 need plans `09` and `10`.
 

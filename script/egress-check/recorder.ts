@@ -70,9 +70,12 @@ export function startProxy(input: { routes: Route[]; markers: string[]; record: 
   const finish = (socket: Socket<Conn>, bodyText: string) => {
     const head = socket.data.head
     if (!head) return refuse(socket)
-    const url = head.target.startsWith("http://") || head.target.startsWith("https://") ? new URL(head.target) : undefined
+    const url =
+      head.target.startsWith("http://") || head.target.startsWith("https://") ? new URL(head.target) : undefined
     const host = url?.hostname ?? head.headers.get("host")?.split(":")[0] ?? "?"
-    const port = url ? Number(url.port || (url.protocol === "https:" ? 443 : 80)) : Number(head.headers.get("host")?.split(":")[1] ?? 80)
+    const port = url
+      ? Number(url.port || (url.protocol === "https:" ? 443 : 80))
+      : Number(head.headers.get("host")?.split(":")[1] ?? 80)
     const scan = head.raw + bodyText
     input.record({
       ts: Date.now(),

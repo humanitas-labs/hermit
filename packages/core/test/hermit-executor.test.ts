@@ -39,7 +39,9 @@ it.live("permits loopback under the default private policy", () =>
 it.live("refuses a non-loopback endpoint before contacting it", () =>
   Effect.gen(function* () {
     const executor = yield* RequestExecutor.Service
-    const error = yield* executor.execute(HttpClientRequest.post(`http://0.0.0.0:${server.port}/native`)).pipe(Effect.flip)
+    const error = yield* executor
+      .execute(HttpClientRequest.post(`http://0.0.0.0:${server.port}/native`))
+      .pipe(Effect.flip)
     expect(String(error)).toContain("preset does not permit")
     expect(hits).toEqual([])
   }),
@@ -52,7 +54,9 @@ it.live("follows the narrowed process policy", () =>
     const response = yield* executor.execute(HttpClientRequest.post(`http://0.0.0.0:${server.port}/native`))
     expect(response.status).toBe(200)
     HermitPolicy.narrow({ preset: "private", user: new Set() })
-    const error = yield* executor.execute(HttpClientRequest.post(`http://0.0.0.0:${server.port}/again`)).pipe(Effect.flip)
+    const error = yield* executor
+      .execute(HttpClientRequest.post(`http://0.0.0.0:${server.port}/again`))
+      .pipe(Effect.flip)
     expect(String(error)).toContain("preset does not permit")
     expect(hits).toEqual(["/native"])
   }),

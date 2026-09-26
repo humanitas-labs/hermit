@@ -1465,8 +1465,8 @@ function AssistantMessage(props: { message: AssistantMessage; parts: Part[]; las
             </Spinner>
             <Show when={waited() > 15000}>
               <text fg={theme.textMuted}>
-                Still loading. A local server has to load the model weights and read the whole prompt before
-                it can answer, so a cold start can take a minute or more.
+                Still loading. A local server has to load the model weights and read the whole prompt before it can
+                answer, so a cold start can take a minute or more.
               </text>
             </Show>
           </box>

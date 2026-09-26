@@ -119,7 +119,9 @@ function streamChunks(reply: Reply) {
     return [
       chunk({ role: "assistant", content: reply.text ?? "" }),
       chunk({
-        tool_calls: [{ index: 0, id: "call_egress_1", type: "function", function: { name: reply.name, arguments: "" } }],
+        tool_calls: [
+          { index: 0, id: "call_egress_1", type: "function", function: { name: reply.name, arguments: "" } },
+        ],
       }),
       chunk({ tool_calls: [{ index: 0, function: { arguments: JSON.stringify(reply.args) } }] }),
       chunk({}, { finish_reason: "tool_calls" }),
@@ -133,7 +135,13 @@ function completion(reply: Reply) {
   const content = reply.type === "text" ? reply.text : ""
   const toolCalls =
     reply.type === "tool"
-      ? [{ id: "call_egress_1", type: "function", function: { name: reply.name, arguments: JSON.stringify(reply.args) } }]
+      ? [
+          {
+            id: "call_egress_1",
+            type: "function",
+            function: { name: reply.name, arguments: JSON.stringify(reply.args) },
+          },
+        ]
       : undefined
   const usage = reply.type === "text" || reply.type === "tool" ? (reply.usage ?? { input: 20, output: 5 }) : undefined
   return {
@@ -231,7 +239,9 @@ export function start(options: Options) {
         // retries see a dead endpoint. The harness restarts nothing.
         const stream = new ReadableStream({
           start(controller) {
-            controller.enqueue(`data: ${JSON.stringify(chunk({ role: "assistant", content: reply.text ?? "partial" }))}\n\n`)
+            controller.enqueue(
+              `data: ${JSON.stringify(chunk({ role: "assistant", content: reply.text ?? "partial" }))}\n\n`,
+            )
             // stop(true) force-closes the open connection, which is the abort.
             setTimeout(() => server.stop(true), 50)
           },
