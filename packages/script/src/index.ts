@@ -50,10 +50,12 @@ const VERSION = await (async () => {
 const bot = ["actions-user", "opencode", "opencode-agent[bot]"]
 const teamPath = path.resolve(import.meta.dir, "../../../.github/TEAM_MEMBERS")
 const team = [
+  // Hermit has no team roster; the upstream file is optional here.
   ...(await Bun.file(teamPath)
     .text()
     .then((x) => x.split(/\r?\n/).map((x) => x.trim()))
-    .then((x) => x.filter((x) => x && !x.startsWith("#")))),
+    .then((x) => x.filter((x) => x && !x.startsWith("#")))
+    .catch(() => [] as string[])),
   ...bot,
 ]
 
