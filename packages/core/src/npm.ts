@@ -236,6 +236,7 @@ const layer = Layer.effect(
 
           yield* fs.remove(path.join(dir, "package-lock.json")).pipe(Effect.orElseSucceed(() => {}))
 
+          yield* Effect.logInfo("installing npm package", { pkg, registry: yield* NpmConfig.registry(dir) })
           yield* add(pkg)
 
           const resolved = yield* pick()

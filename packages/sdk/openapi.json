@@ -19995,6 +19995,21 @@
         "additionalProperties": false,
         "description": "Server configuration for opencode serve and web commands"
       },
+      "WebSearchConfig": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string",
+            "enum": ["exa", "parallel"],
+            "description": "Web search backend the websearch tool sends queries to"
+          },
+          "apiKey": {
+            "type": "string"
+          }
+        },
+        "required": ["provider"],
+        "additionalProperties": false
+      },
       "PermissionActionConfig": {
         "type": "string",
         "enum": ["ask", "allow", "deny"]
@@ -20657,6 +20672,9 @@
               }
             },
             "additionalProperties": false
+          },
+          "websearch": {
+            "$ref": "#/components/schemas/WebSearchConfig"
           },
           "snapshot": {
             "type": "boolean"

@@ -20,8 +20,6 @@ describe("RuntimeFlags", () => {
             OPENCODE_DISABLE_EXTERNAL_SKILLS: "true",
             OPENCODE_DISABLE_LSP_DOWNLOAD: "true",
             OPENCODE_EXPERIMENTAL: "true",
-            OPENCODE_ENABLE_EXA: "true",
-            OPENCODE_ENABLE_PARALLEL: "true",
             OPENCODE_ENABLE_EXPERIMENTAL_MODELS: "true",
             OPENCODE_ENABLE_QUESTION_TOOL: "true",
             OPENCODE_CLIENT: "desktop",
@@ -34,8 +32,6 @@ describe("RuntimeFlags", () => {
       expect(flags.disableExternalSkills).toBe(true)
       expect(flags.disableLspDownload).toBe(true)
       expect(flags.disableClaudeCodePrompt).toBe(false)
-      expect(flags.enableExa).toBe(true)
-      expect(flags.enableParallel).toBe(true)
       expect(flags.enableExperimentalModels).toBe(true)
       expect(flags.enableQuestionTool).toBe(true)
       expect(flags.experimentalReferences).toBe(true)
@@ -99,7 +95,6 @@ describe("RuntimeFlags", () => {
       expect(flags.disableLspDownload).toBe(false)
       expect(flags.disableClaudeCodePrompt).toBe(false)
       expect(flags.disableClaudeCodeSkills).toBe(false)
-      expect(flags.enableExa).toBe(false)
       expect(flags.experimentalIconDiscovery).toBe(false)
       expect(flags.experimentalOxfmt).toBe(false)
       expect(flags.outputTokenMax).toBeUndefined()
@@ -310,7 +305,6 @@ describe("RuntimeFlags", () => {
               OPENCODE_DISABLE_EXTERNAL_SKILLS: "true",
               OPENCODE_DISABLE_LSP_DOWNLOAD: "true",
               OPENCODE_EXPERIMENTAL: "true",
-              OPENCODE_ENABLE_EXA: "true",
               OPENCODE_EXPERIMENTAL_BASH_DEFAULT_TIMEOUT_MS: "1234",
               OPENCODE_CLIENT: "desktop",
             }),
@@ -324,7 +318,6 @@ describe("RuntimeFlags", () => {
       expect(flags.disableLspDownload).toBe(false)
       expect(flags.disableClaudeCodePrompt).toBe(false)
       expect(flags.disableClaudeCodeSkills).toBe(false)
-      expect(flags.enableExa).toBe(false)
       expect(flags.experimentalIconDiscovery).toBe(false)
       expect(flags.experimentalOxfmt).toBe(false)
       expect(flags.outputTokenMax).toBeUndefined()

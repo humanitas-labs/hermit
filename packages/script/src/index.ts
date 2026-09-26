@@ -53,9 +53,9 @@ const team = [
   // Hermit has no team roster; the upstream file is optional here.
   ...(await Bun.file(teamPath)
     .text()
+    .catch(() => "")
     .then((x) => x.split(/\r?\n/).map((x) => x.trim()))
-    .then((x) => x.filter((x) => x && !x.startsWith("#")))
-    .catch(() => [] as string[])),
+    .then((x) => x.filter((x) => x && !x.startsWith("#")))),
   ...bot,
 ]
 

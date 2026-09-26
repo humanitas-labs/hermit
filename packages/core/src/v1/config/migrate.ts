@@ -42,6 +42,7 @@ export function migrate(info: typeof ConfigV1.Info.Type) {
     agents: agents(info),
     snapshots: info.snapshot,
     watcher: info.watcher,
+    websearch: info.websearch,
     formatter: info.formatter,
     lsp: info.lsp,
     attachments: info.attachment,
