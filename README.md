@@ -1,8 +1,8 @@
-<div align="center">
-  <img src="docs/hermit.png" alt="Hermit" width="240">
-  <h1>Hermit</h1>
-  <p>A coding agent for your terminal that tells you exactly where your context goes.</p>
-</div>
+<img src="docs/hermit.png" alt="Hermit" width="240">
+
+# Hermit
+
+A coding agent for your terminal that tells you exactly where your context goes.
 
 Hermit is a privacy-focused fork of [OpenCode](https://github.com/anomalyco/opencode). It keeps the parts that make a good coding agent, drops the hosted product around it, and adds one rule: your conversation goes only to a model endpoint you configured yourself, and the UI always shows which kind of endpoint that is.
 
