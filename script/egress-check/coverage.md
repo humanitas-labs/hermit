@@ -1,0 +1,74 @@
+# Egress check coverage
+
+What `run.sh` proves, what it does not, and why. The claim the harness supports is exactly the set of rows marked covered; nothing else is verified by network inspection.
+
+## 1. Capture layers
+
+| Layer | Mechanism | Records | Platform |
+|---|---|---|---|
+| Recording proxy | `HTTP_PROXY`/`HTTPS_PROXY` point at a loopback proxy (`recorder.ts`). Every absolute-form request and every `CONNECT` is recorded with host, port, path, header names, and which context markers appear in headers or body. `CONNECT` to the two scripted fake TLS hosts is tunneled to the fake servers (MITM by routing, not by certificate forgery: the fake servers present a self-signed cert the binary trusts through `NODE_EXTRA_CA_CERTS`/`SSL_CERT_FILE`). Everything else is refused after recording. | attempts and requests from anything that honors the proxy environment | all |
+| Fake inference servers | `fake-inference.ts` on loopback, plain and TLS. Records path, host header, header names and non-credential values, model, message and tool counts, marker hits, byte count. Classifies each request as primary, title, compaction, subagent, or agent generation by prompt content. Never stores bodies. | every model call | all |
+| Sandbox (macOS) | `sandbox-exec` profile denying non-loopback outbound and the `mDNSResponder` socket, with `send-signal SIGKILL`. A forbidden connect or system-resolver lookup kills the process; the harness records the kill as an attempt. The unified log is read as a best-effort supplement (it drops most denial reports; verified: `curl`'s appear, python, bun, and the binary's do not, which is why the kill is the primary signal). | any connect() or DNS lookup that bypasses the proxy, without the destination address | macOS |
+| Network namespace (Linux) | `unshare -rnm` with `ip route add local 0.0.0.0/0 dev lo`, so every address is local. A sink on 80 and 443 records the original destination IP from the socket's local address. `/etc/resolv.conf` is bind-mounted to point at a recording resolver on 127.0.0.1:53 that answers NXDOMAIN. | proxy bypasses with destination IP and port; every DNS name queried | Linux, CI |
+| Bypass fixture (S0) | `bypass-fixture.ts` opens a raw TCP connection to 192.0.2.1:443 ignoring the proxy. The run fails unless the OS layer records it. | proof that the OS layer is active | all |
+
+Every run uses a fresh `HOME`, `XDG_*`, `TMPDIR`, config directory, and auth file under the results directory, with `OPENCODE_TEST_HOME` set so `os.homedir()` cannot leak the developer's home. Nothing from the machine's real config is read. Each scenario runs cold (directories wiped) and warm (directories kept from the cold run).
+
+Isolation `none` (`--isolation none`) keeps the proxy and fake servers but no OS layer; S0 then fails by design.
+
+## 2. Inference paths (plan 10 section 3.0)
+
+| Path | Scenario | Covered | Notes |
+|---|---|---|---|
+| V1 primary turn (`session/llm.ts`, ai-sdk runtime) | S1, S2, S4, S13 | yes | request recorded at the fake server, classified `primary` |
+| V1 title generation | S1, S7, S15a | yes | classified by the `Generate a title for this conversation` prefix; baseline shows it carries `x-session-id` and `x-session-affinity` headers |
+| V1 compaction | S7, S15b | yes | the local model reports `usage.input` above the model's 3000-token context so overflow compaction fires; classified by the compaction prompt |
+| V1 subagents (task tool) | S7, S15b | yes | scripted `task` call; classified by the subagent marker in the prompt |
+| Agent generation (`agent/agent.ts` generate) | S7 | yes | `opencode agent create` non-interactive; classified by the generation prompt |
+| Plugin small-model hook | S8b | yes | a local file plugin returns a third-party model from `experimental.provider.small_model` |
+| `small_model` config | S8a, S9 | yes | |
+| Project copy (`project-copy.ts` uses `getSmallModel`) | none | no | only reachable through the HTTP API `project.copy` route; not exercised by `run` or the TUI. Add a `serve`-based scenario when plan 10 lands. |
+| V2 runner (`SessionRunner`) | none | no | V2 is behind `OPENCODE_EXPERIMENTAL_EVENT_SYSTEM` and not selected by `run`; the same `llm.stream` path is exercised through V1. Add when V2 becomes a supported execution path. |
+| Native runtime (`@opencode-ai/llm`, `OPENCODE_EXPERIMENTAL_NATIVE_LLM`) | S15a, S15b | yes | same scenarios as S1/S7 minus agent generation |
+| Claude Code / Codex native runtimes | none | no | they require OAuth credentials for a real third-party service; there is no loopback stand-in. Covered by the destination check in plan 10 rather than by this harness. |
+| Codex WebSocket transport | none | no | same as above; additionally the proxy does not speak WebSocket. If retained, this needs a fake WebSocket endpoint. |
+
+## 3. Transports
+
+| Transport | Covered | How |
+|---|---|---|
+| HTTP to loopback | yes | fake servers |
+| HTTPS to a named host | yes | proxy `CONNECT` routed to a fake TLS server; hostname `api.fireworks.ai` used without DNS |
+| HTTP redirects | yes | S12: loopback server answers 307 to a second host |
+| WebSocket | no | see above |
+| Raw sockets bypassing the proxy | attempts only | S0 proves detection; destination address is visible on Linux, masked on macOS |
+| UDP / DNS | Linux only | macOS blocks the system resolver but cannot log the name |
+
+## 4. Scenarios
+
+| Scenario | Covered | Deviation from plan 11 |
+|---|---|---|
+| S1 local session | yes | |
+| S2 tools | yes | attribution to the tool call is asserted through the `run --format json` event stream (`"tool":"webfetch"`), not the session database |
+| S3 local model down | yes | the server drops the stream and stops; the run waits through the retry backoff (about 65 s) |
+| S4 third-party session | yes | `/etc/hosts` is not writable without root, so the hostname is resolved by the proxy route instead; the `THIRD PARTY` label assertion is on `run --format default` output |
+| S5 preset conflict | yes | |
+| S6 background quiet | yes | TUI under a Python pty for `--idle` seconds (default 90) |
+| S7 secondary calls | yes | title, compaction, subagent, agent generation in one run plus one CLI command |
+| S8 remote secondary override | yes, as S8a and S8b | |
+| S9 project weakening | yes | one project config carries all three weakenings |
+| S10 false local | yes | uses `owner: "user"` plus a hypothetical `class: "local"` and `hermit.local` list; whatever key plan 10 chooses, the endpoint must still be rejected |
+| S11 endpoint drift | yes | per-model `options.baseURL` |
+| S12 redirect | yes | |
+| S13 idle credentials | yes | auth file entry for `fireworks-ai` |
+| S14 tooling downloads | yes, as S14a and S14b | a stub `node_modules/typescript` makes the TypeScript LSP resolve and ask for `typescript-language-server`; the expected download attempt is the npm registry `CONNECT` |
+| S15 every runtime | partially | native runtime covered; Claude Code, Codex, and V2 are not (section 2) |
+
+## 5. Known limits
+
+- The proxy records what the binary sends to it. A process that ignores the proxy is seen only as an attempt (macOS) or as IP and port (Linux); its request content is never captured.
+- macOS cannot attribute a sandbox kill to a destination. The run output still shows which command died, and the Linux run shows the address.
+- The unified-log supplement on macOS is best effort and usually empty.
+- Header scanning for session identifiers matches `ses_` prefixes only.
+- The harness needs Bun matching the root `packageManager` to build; set `BUN` to that binary. `packages/script` reads `.github/TEAM_MEMBERS` at import time, so `run.sh` stubs it for the build.
+- Timing: S3 and S12 wait for the binary's retry backoff; S6 runs for the idle window twice. A full run is about eight minutes.
