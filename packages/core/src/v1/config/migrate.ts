@@ -37,7 +37,6 @@ export function migrate(info: typeof ConfigV1.Info.Type) {
     shell: info.shell,
     model: info.model,
     default_agent: info.default_agent,
-    username: info.username,
     permissions: permissions(info.permission, info.tools),
     agents: agents(info),
     snapshots: info.snapshot,

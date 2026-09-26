@@ -234,12 +234,12 @@ describe("SessionStatus.Info", () => {
       attempt: 1,
       message: "transient",
       action: {
-        reason: "free_tier_limit",
-        provider: "opencode",
-        title: "Free limit reached",
-        message: "Subscribe to OpenCode Go.",
-        label: "subscribe",
-        link: "https://opencode.ai/go",
+        reason: "account_rate_limit",
+        provider: "example",
+        title: "Limit reached",
+        message: "Open the provider dashboard.",
+        label: "open",
+        link: "https://example.com/limits",
       },
       next: 500,
     }

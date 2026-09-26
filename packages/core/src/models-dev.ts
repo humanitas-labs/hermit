@@ -7,7 +7,7 @@ import { Flag } from "./flag/flag"
 import { Flock } from "./util/flock"
 import { Hash } from "./util/hash"
 import { FSUtil } from "./fs-util"
-import { InstallationChannel, InstallationVersion } from "./installation/version"
+import { InstallationVersion } from "./installation/version"
 import { EventV2 } from "./event"
 import { makeGlobalNode } from "./effect/app-node"
 import { httpClient } from "./effect/app-node-platform"
@@ -20,7 +20,7 @@ const InterleavedField = Schema.Union([
   Schema.String,
 ])
 
-const USER_AGENT = `opencode/${InstallationChannel}/${InstallationVersion}/${Flag.OPENCODE_CLIENT}`
+const USER_AGENT = `hermit/${InstallationVersion}`
 
 const CostTier = Schema.Struct({
   input: Schema.Finite,
@@ -173,6 +173,7 @@ const layer = Layer.effect(
     })
 
     const fetchApi = Effect.fn("ModelsDev.fetchApi")(function* () {
+      yield* Effect.logInfo("model catalog refresh", { url: `${source}/api.json` })
       return yield* HttpClientRequest.get(`${source}/api.json`).pipe(
         HttpClientRequest.setHeader("User-Agent", USER_AGENT),
         http.execute,
@@ -228,7 +229,13 @@ const layer = Layer.effect(
         }),
       )
       return JSON.parse(text) as Record<string, Provider>
-    }).pipe(Effect.withSpan("ModelsDev.populate"), Effect.orDie)
+    }).pipe(
+      // Hermit: the OpenCode-hosted providers are removed from the binary; drop
+      // them from every catalog source so the runtime fetch cannot reintroduce them.
+      Effect.map((data) => Object.fromEntries(Object.entries(data).filter(([id]) => !id.startsWith("opencode")))),
+      Effect.withSpan("ModelsDev.populate"),
+      Effect.orDie,
+    )
 
     const [cachedGet, invalidate] = yield* Effect.cachedInvalidateWithTTL(populate, Duration.infinity)
 
@@ -253,8 +260,8 @@ const layer = Layer.effect(
     })
 
     if (!Flag.OPENCODE_DISABLE_MODELS_FETCH && !process.argv.includes("--get-yargs-completions")) {
-      // Schedule.spaced runs the effect once, then waits between completions.
-      yield* Effect.forkScoped(refresh().pipe(Effect.repeat(Schedule.spaced("60 minutes")), Effect.ignore))
+      // Hermit: one catalog refresh per process start; upstream repeats it hourly.
+      yield* Effect.forkScoped(refresh().pipe(Effect.ignore))
     }
 
     return Service.of({ get, refresh })

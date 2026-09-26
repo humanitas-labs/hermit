@@ -39,9 +39,6 @@ export class Info extends Schema.Class<Info>("Config.Info")({
   default_agent: Schema.String.pipe(Schema.optional).annotate({
     description: "Default primary agent to use when no session agent is selected",
   }),
-  username: Schema.String.pipe(Schema.optional).annotate({
-    description: "Username displayed in conversations and used for telemetry identity",
-  }),
   permissions: Permission.Ruleset.pipe(Schema.optional).annotate({
     description: "Ordered tool permission rules applied to agent tool use",
   }),

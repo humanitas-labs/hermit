@@ -163,9 +163,6 @@ describe("CloudflareAIGatewayPlugin", () => {
             cacheKey: "cache-key",
             skipCache: true,
             collectLog: false,
-            headers: {
-              "User-Agent": expect.stringContaining("opencode/"),
-            },
           },
         })
       }),

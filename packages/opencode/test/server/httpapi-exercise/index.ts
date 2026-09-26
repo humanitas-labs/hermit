@@ -148,18 +148,18 @@ const scenarios: Scenario[] = [
   http.protected
     .patch("/config", "config.update")
     .mutating()
-    .at((ctx) => ({ path: "/config", headers: ctx.headers(), body: { username: "httpapi-local" } }))
+    .at((ctx) => ({ path: "/config", headers: ctx.headers(), body: { shell: "httpapi-local" } }))
     .json(
       200,
       (body) => {
         object(body)
-        check(body.username === "httpapi-local", "local config update should return patched config")
+        check(body.shell === "httpapi-local", "local config update should return patched config")
       },
       "status",
     ),
   http.protected
     .patch("/config", "config.update.invalid")
-    .at((ctx) => ({ path: "/config", headers: ctx.headers(), body: { username: 1 } }))
+    .at((ctx) => ({ path: "/config", headers: ctx.headers(), body: { shell: 1 } }))
     .status(400),
   http.protected.get("/config/providers", "config.providers").json(),
   http.protected.get("/project", "project.list").json(200, array, "status"),

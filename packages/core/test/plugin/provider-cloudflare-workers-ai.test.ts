@@ -173,7 +173,7 @@ describe("CloudflareWorkersAIPlugin", () => {
     ),
   )
 
-  it.effect("uses env API key over auth or configured API key and keeps the Cloudflare User-Agent", () =>
+  it.effect("uses env API key over auth or configured API key", () =>
     withEnv({ CLOUDFLARE_ACCOUNT_ID: "acct", CLOUDFLARE_API_KEY: "env-key" }, () =>
       Effect.gen(function* () {
         const plugin = yield* PluginV2.Service
@@ -200,7 +200,6 @@ describe("CloudflareWorkersAIPlugin", () => {
         const headers = yield* Effect.promise(() => Promise.resolve(cloudflareHeaders(result.sdk)))
         expect(headers.authorization).toBe("Bearer env-key")
         expect(headers.custom).toBe("header")
-        expect(headers["user-agent"]).toMatch(/^opencode\/.* cloudflare-workers-ai \(.+\) ai-sdk\/openai-compatible\//)
       }),
     ),
   )

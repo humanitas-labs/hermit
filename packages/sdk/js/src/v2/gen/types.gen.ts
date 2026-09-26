@@ -1917,7 +1917,6 @@ export type Config = {
   small_model?: string
   default_agent?: string
   subagent_depth?: number
-  username?: string
   mode?: {
     build?: AgentConfig
     plan?: AgentConfig
@@ -2002,7 +2001,6 @@ export type Config = {
   experimental?: {
     disable_paste_summary?: boolean
     batch_tool?: boolean
-    openTelemetry?: boolean
     primary_tools?: Array<string>
     continue_loop_on_deny?: boolean
     mcp_timeout?: number

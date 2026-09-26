@@ -20737,9 +20737,6 @@
             "type": "integer",
             "minimum": 0
           },
-          "username": {
-            "type": "string"
-          },
           "mode": {
             "type": "object",
             "properties": {
@@ -20973,9 +20970,6 @@
                 "type": "boolean"
               },
               "batch_tool": {
-                "type": "boolean"
-              },
-              "openTelemetry": {
                 "type": "boolean"
               },
               "primary_tools": {

@@ -87,9 +87,6 @@ export const Info = Schema.Struct({
   subagent_depth: Schema.optional(NonNegativeInt).annotate({
     description: "Maximum subagent nesting depth. Defaults to 1, which prevents subagents from launching subagents.",
   }),
-  username: Schema.optional(Schema.String).annotate({
-    description: "Custom username to display in conversations instead of system username",
-  }),
   mode: Schema.optional(
     Schema.StructWithRest(
       Schema.Struct({ build: Schema.optional(ConfigAgentV1.Info), plan: Schema.optional(ConfigAgentV1.Info) }),
@@ -170,9 +167,6 @@ export const Info = Schema.Struct({
     Schema.Struct({
       disable_paste_summary: Schema.optional(Schema.Boolean),
       batch_tool: Schema.optional(Schema.Boolean).annotate({ description: "Enable the batch tool" }),
-      openTelemetry: Schema.optional(Schema.Boolean).annotate({
-        description: "Enable OpenTelemetry spans for AI SDK calls (using the 'experimental_telemetry' flag)",
-      }),
       primary_tools: Schema.optional(Schema.mutable(Schema.Array(Schema.String))).annotate({
         description: "Tools that should only be available to primary agents.",
       }),

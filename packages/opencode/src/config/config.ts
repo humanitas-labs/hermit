@@ -2,7 +2,6 @@ import { LayerNode } from "@opencode-ai/core/effect/layer-node"
 import { serviceUse } from "@opencode-ai/core/effect/service-use"
 import path from "path"
 import { pathToFileURL } from "url"
-import os from "os"
 import { mergeDeep } from "remeda"
 import { Global } from "@opencode-ai/core/global"
 import { HermitPolicy } from "@opencode-ai/core/hermit/policy"
@@ -419,15 +418,6 @@ const layer = Layer.effect(
             perms[tool] = action
           }
           result.permission = mergeDeep(perms, result.permission ?? {})
-        }
-
-        if (!result.username) {
-          try {
-            result.username = os.userInfo().username || "user"
-          } catch (err) {
-            yield* Effect.logWarning("failed to read system username, using fallback", { err })
-            result.username = "user"
-          }
         }
 
         if (Flag.OPENCODE_DISABLE_AUTOCOMPACT) {

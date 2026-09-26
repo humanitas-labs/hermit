@@ -81,9 +81,6 @@ describe("GitLabPlugin", () => {
           expect(gitlabSDKOptions[0].aiGatewayHeaders).toMatchObject({
             "anthropic-beta": "context-1m-2025-08-07",
           })
-          expect(String((gitlabSDKOptions[0].aiGatewayHeaders as Record<string, string>)["User-Agent"])).toContain(
-            "gitlab-ai-provider/test-version",
-          )
           expect(gitlabSDKOptions[0].featureFlags).toEqual({
             duo_agent_platform_agentic_chat: true,
             duo_agent_platform: true,

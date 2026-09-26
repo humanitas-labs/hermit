@@ -278,7 +278,6 @@ describe("Config", () => {
                 shell: "/bin/bash",
                 model: "anthropic/claude",
                 default_agent: "reviewer",
-                username: "test-user",
                 permissions: [
                   { action: "bash", resource: "*", effect: "ask" },
                   { action: "bash", resource: "git status", effect: "allow" },
@@ -361,7 +360,6 @@ describe("Config", () => {
             expect(documents[0]?.info.shell).toBe("/bin/bash")
             expect(documents[0]?.info.model).toBe("anthropic/claude")
             expect(documents[0]?.info.default_agent).toBe("reviewer")
-            expect(documents[0]?.info.username).toBe("test-user")
             expect(documents[0]?.info.permissions).toEqual([
               { action: "bash", resource: "*", effect: "ask" },
               { action: "bash", resource: "git status", effect: "allow" },

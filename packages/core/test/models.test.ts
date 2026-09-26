@@ -6,6 +6,7 @@ import { LayerNodePlatform } from "@opencode-ai/core/effect/app-node-platform"
 import { LayerNode } from "@opencode-ai/core/effect/layer-node"
 import { Flag } from "@opencode-ai/core/flag/flag"
 import { Global } from "@opencode-ai/core/global"
+import { InstallationVersion } from "@opencode-ai/core/installation/version"
 import { ModelsDev } from "@opencode-ai/core/models-dev"
 import { it } from "./lib/effect"
 import { readFile, rm, writeFile, utimes, mkdir } from "fs/promises"
@@ -232,7 +233,7 @@ describe("ModelsDev Service", () => {
       const final = yield* Ref.get(state)
       expect(final.calls.length).toBe(1)
       expect(final.calls[0].url).toContain("/api.json")
-      expect(final.calls[0].userAgent).toContain("/cli")
+      expect(final.calls[0].userAgent).toBe(`hermit/${InstallationVersion}`)
     }),
   )
 
